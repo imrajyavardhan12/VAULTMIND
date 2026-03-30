@@ -1,0 +1,40 @@
+vault_path: "/Users/rvs/Obsidian Vault"
+
+folders:
+  inbox: "📥 Inbox"
+  articles: "📚 Sources"
+  tools: "🛠️ Tools"
+  threads: "🐦 Threads"
+  discussions: "💬 Discussions"
+  flashcards: "🃏 Flashcards"
+  digests: "📊 Digests"
+  mocs: "🗺️ MOCs"
+  ideas: "💡 Ideas"
+  meta: "⚙️ Meta"
+
+ai:
+  default_provider: "openai"
+  fallback_chain: ["openai", "anthropic", "ollama"]
+  max_tokens: 2000
+  generate_flashcards: true
+  generate_counterarguments: true
+  rating: true
+  providers:
+    anthropic:
+      models:
+        fast: "claude-sonnet-4-20250514"
+        deep: "claude-opus-4-5"
+    openai:
+      models:
+        fast: "gpt-4.1-mini"
+        deep: "gpt-4.1"
+    ollama:
+      base_url: "http://localhost:11434"
+      models:
+        fast: "llama3"
+        deep: "llama3"
+
+preferences:
+  default_status: "processed"
+  open_after_save: false
+  notify_on_save: true

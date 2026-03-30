@@ -1,0 +1,39 @@
+[project]
+name = "vaultmind"
+version = "0.1.0"
+description = "Your personal AI-powered second brain. Feed it anything. Find everything."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.15.0",
+    "rich>=13.0.0",
+    "httpx>=0.28.0",
+    "trafilatura>=2.0.0",
+    "anthropic>=0.52.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "tenacity>=9.0.0",
+    "structlog>=24.0.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.scripts]
+vm = "vaultmind.main:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vaultmind"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
