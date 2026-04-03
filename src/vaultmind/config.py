@@ -48,10 +48,22 @@ class PreferencesConfig(BaseModel):
     notify_on_save: bool = True
 
 
+def _find_env_file() -> str:
+    """Find .env in cwd or ~/.config/vaultmind/."""
+    candidates = [
+        Path.cwd() / ".env",
+        Path.home() / ".config" / "vaultmind" / ".env",
+    ]
+    for path in candidates:
+        if path.exists():
+            return str(path)
+    return ".env"
+
+
 class EnvSettings(BaseSettings):
     """Secrets loaded from .env file."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_find_env_file(), env_file_encoding="utf-8", extra="ignore")
 
     anthropic_api_key: str = ""
     openai_api_key: str = ""
@@ -90,9 +102,9 @@ def load_config() -> AppConfig:
         from vaultmind.utils.display import print_error
 
         print_error(
-            "No config.yaml found.\n"
-            "Copy config.example.yaml to config.yaml and set your vault path:\n"
-            "  cp config.example.yaml config.yaml"
+            "VaultMind is not set up yet.\n"
+            "Run the setup wizard:\n"
+            "  vm init"
         )
         raise SystemExit(1)
 

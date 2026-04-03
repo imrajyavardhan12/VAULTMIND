@@ -18,15 +18,22 @@ pip install vaultmind
 ## Quick Start
 
 ```bash
-# Configure
-cp .env.example .env              # Add your API keys
-cp config.example.yaml config.yaml  # Set your vault path
+# Interactive setup — vault path, AI provider, API key
+vm init
 
 # Save your first note
 vm save https://example.com/article
 ```
 
 ## Commands
+
+### `vm init`
+
+Interactive setup wizard. Creates `~/.config/vaultmind/config.yaml` and `.env`, asks for your vault path, AI provider, and API key, and scaffolds the vault folder structure.
+
+```bash
+vm init
+```
 
 ### `vm save <url>`
 
@@ -131,46 +138,16 @@ Show the current VaultMind version.
 
 ## Configuration
 
-### `config.yaml`
+`vm init` creates all config files automatically. For advanced users, they live at:
 
-```yaml
-vault_path: "/path/to/your/Obsidian Vault"
+| File | Purpose |
+|---|---|
+| `~/.config/vaultmind/config.yaml` | Vault path, folder names, AI provider/model settings |
+| `~/.config/vaultmind/.env` | API keys (permissions: 600) |
 
-folders:
-  inbox: "📥 Inbox"
-  articles: "📚 Sources"
-  tools: "🛠️ Tools"
-  threads: "🐦 Threads"
-  discussions: "💬 Discussions"
-  # ... see config.example.yaml for all options
+You can also place `config.yaml` and `.env` in your current working directory — VaultMind checks there first.
 
-ai:
-  default_provider: "anthropic"        # anthropic | openai | ollama
-  fallback_chain: ["anthropic", "openai", "ollama"]
-  max_tokens: 2000
-  generate_flashcards: true
-  generate_counterarguments: true
-  providers:
-    anthropic:
-      models:
-        fast: "claude-sonnet-4-20250514"       # Used by: save, brief
-        deep: "claude-opus-4-5"     # Used by: digest, reflect
-    openai:
-      models:
-        fast: "gpt-4.1-mini"
-        deep: "gpt-4.1"
-```
-
-### `.env`
-
-```bash
-# At least one AI provider key is required
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-
-# Optional: higher GitHub API rate limits
-GITHUB_TOKEN=ghp_...
-```
+To reconfigure, run `vm init` again.
 
 ## Project Structure
 

@@ -1,6 +1,6 @@
 [project]
 name = "vaultmind"
-version = "0.1.1"
+version = "0.1.2"
 description = "Your personal AI-powered second brain. Feed it anything. Find everything."
 readme = "README.md"
 requires-python = ">=3.11"

@@ -6,14 +6,16 @@ import typer
 
 
 def register_commands(app: typer.Typer) -> None:
-    """Register phase-4 commands on the main Typer app."""
+    """Register all commands on the main Typer app."""
     from vaultmind.commands.brief import brief
     from vaultmind.commands.digest import digest
     from vaultmind.commands.find import find
     from vaultmind.commands.flashcard import flashcard
+    from vaultmind.commands.init import init
     from vaultmind.commands.reflect import reflect
     from vaultmind.commands.stats import stats
 
+    app.command("init")(init)
     app.command("brief")(brief)
     app.command("digest")(digest)
     app.command("find")(find)
