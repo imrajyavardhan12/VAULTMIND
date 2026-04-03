@@ -4,6 +4,19 @@ version = "0.1.0"
 description = "Your personal AI-powered second brain. Feed it anything. Find everything."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Rajya Vardhan Singh", email = "imrajyavardhan12@gmail.com" }]
+keywords = ["obsidian", "second-brain", "ai", "cli", "knowledge-management"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
 dependencies = [
     "typer>=0.15.0",
     "rich>=13.0.0",

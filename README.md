@@ -4,12 +4,15 @@
 
 A CLI tool that sits between the internet and your [Obsidian](https://obsidian.md) vault. Give it a URL — an article, GitHub repo, Reddit post, or tweet — and it extracts the content, processes it through AI, and writes a beautifully structured, interlinked Markdown note into your vault.
 
+## Installation
+
+```bash
+pip install vaultmind
+```
+
 ## Quick Start
 
 ```bash
-# Install
-uv pip install -e .
-
 # Configure
 cp .env.example .env              # Add your API keys
 cp config.example.yaml config.yaml  # Set your vault path
@@ -211,4 +214,4 @@ src/vaultmind/
 - An Anthropic or OpenAI API key
 - An Obsidian vault directory
 
-See [PRD.md](PRD.md) for the full project blueprint.
+See the [PyPI page](https://pypi.org/project/vaultmind/) for the latest release.
