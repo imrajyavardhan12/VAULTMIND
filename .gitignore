@@ -29,3 +29,6 @@ config.yaml
 PRD.md
 COMPLETE_PROJECT_GUIDE.md
 PHASE3_IMPLEMENTATION_REPORT.md
+
+# Downloaded archives
+*.zip

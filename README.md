@@ -1,8 +1,20 @@
-# VaultMind
+<p align="center">
+  <img src="assets/icons8-mind-100.png" alt="VaultMind" width="80">
+</p>
 
-> Your personal AI-powered second brain. Feed it anything. Find everything.
+<h1 align="center">VaultMind</h1>
+
+<p align="center">
+  <em>Your personal AI-powered second brain. Feed it anything. Find everything.</em>
+</p>
 
 A CLI tool that sits between the internet and your [Obsidian](https://obsidian.md) vault. Give it a URL — an article, GitHub repo, Reddit post, or tweet — and it extracts the content, processes it through AI, and writes a beautifully structured, interlinked Markdown note into your vault.
+
+<p align="center">
+  <img src="demo.gif" alt="VaultMind Demo" width="800">
+</p>
+
+---
 
 ## Installation
 
