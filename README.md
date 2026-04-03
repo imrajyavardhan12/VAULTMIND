@@ -7,6 +7,11 @@ A CLI tool that sits between the internet and your [Obsidian](https://obsidian.m
 ## Installation
 
 ```bash
+# Recommended (isolated install)
+brew install pipx
+pipx install vaultmind
+
+# Or with pip (requires Python ≥ 3.11)
 pip install vaultmind
 ```
 
