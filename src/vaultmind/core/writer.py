@@ -141,6 +141,35 @@ def write_note(note: RenderedNote, config: AppConfig) -> Path:
     return target
 
 
+def write_markdown_page(
+    path: Path,
+    *,
+    body: str,
+    frontmatter: dict | None = None,
+) -> Path:
+    """Atomically write a generic markdown page with optional frontmatter."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    content_body = body.rstrip() + "\n"
+    if frontmatter is not None:
+        fm = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        content = f"---\n{fm}---\n\n{content_body}"
+    else:
+        content = content_body
+
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".md.tmp")
+    try:
+        with open(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+        Path(tmp_path).replace(path)
+    except Exception:
+        Path(tmp_path).unlink(missing_ok=True)
+        raise
+
+    log.info("markdown_page_written", path=str(path))
+    return path
+
+
 def parse_frontmatter(file_path: Path) -> dict | None:
     """Parse YAML frontmatter from a markdown file. Returns None on failure."""
     try:

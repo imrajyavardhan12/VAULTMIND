@@ -6,6 +6,7 @@ from typing import Optional
 
 import typer
 
+from vaultmind.commands import register_commands
 from vaultmind.utils.logging import setup_logging
 
 app = typer.Typer(
@@ -43,6 +44,9 @@ def version() -> None:
     from vaultmind import __version__
 
     typer.echo(f"VaultMind v{__version__}")
+
+
+register_commands(app)
 
 
 if __name__ == "__main__":

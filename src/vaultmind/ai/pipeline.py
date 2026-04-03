@@ -9,6 +9,7 @@ import json
 
 import structlog
 
+from vaultmind.ai.json_utils import clean_json_response
 from vaultmind.ai.providers.base import Provider
 from vaultmind.ai.prompts import SYSTEM_PROMPT, build_flashcard_prompt, build_processing_prompt
 from vaultmind.schemas import AIEnrichment, ArticleCategory, ExtractedContent, Flashcard
@@ -59,21 +60,8 @@ async def generate_flashcards(
 
 
 def _clean_json_response(response: str) -> str:
-    """Clean fenced/annotated JSON responses into plain JSON text."""
-    cleaned = response.strip()
-
-    if cleaned.startswith("```"):
-        lines = cleaned.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        cleaned = "\n".join(lines).strip()
-
-    if cleaned.lower().startswith("json"):
-        cleaned = cleaned[4:].strip()
-
-    return cleaned
+    """Compatibility wrapper for shared JSON cleanup utility."""
+    return clean_json_response(response)
 
 
 def _parse_ai_response(response: str, content: ExtractedContent) -> AIEnrichment:

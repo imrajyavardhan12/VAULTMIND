@@ -117,6 +117,80 @@ Content Excerpt:
 {content}
 """
 
+KNOWLEDGE_SYSTEM_PROMPT = """You are VaultMind's synthesis engine.
+You must ground every claim in the provided note packets.
+Never invent note titles, note paths, facts, dates, or conclusions not supported by the input.
+Return only valid JSON matching the requested schema.
+"""
+
+WEEKLY_BRIEF_PROMPT = """Create a weekly brief from the note packets below.
+
+Return JSON with this exact shape:
+{{
+  "period_label": "{period_label}",
+  "one_sentence_takeaway": "single high-signal sentence",
+  "themes": [{{"name": "theme", "insight": "why it matters"}}],
+  "highlights": [{{"title": "exact title", "path": "exact path", "reason": "why notable"}}],
+  "gaps": ["what's missing"],
+  "suggested_next_steps": ["specific next step"]
+}}
+
+Rules:
+- Use only note titles and paths that appear below. Do not invent facts.
+- Keep output concise and concrete.
+- Return JSON only.
+
+Period: {period_label}
+Notes:
+{notes_payload}
+"""
+
+TOPIC_DIGEST_PROMPT = """Create a topic synthesis from the note packets below.
+
+Return JSON with this exact shape:
+{{
+  "topic": "{topic}",
+  "thesis": "single thesis sentence",
+  "patterns": ["pattern 1", "pattern 2"],
+  "tensions": ["tension 1"],
+  "standout_notes": [{{"title": "exact title", "path": "exact path", "reason": "why standout"}}],
+  "open_questions": ["question 1"],
+  "moc_sections": [{{"heading": "Section", "summary": "one-line summary", "note_paths": ["exact/path"]}}]
+}}
+
+Rules:
+- Use only note titles and paths that appear below. Do not invent facts.
+- Focus on synthesis, not repetition.
+- Return JSON only.
+
+Topic: {topic}
+Notes:
+{notes_payload}
+"""
+
+REFLECTION_PROMPT = """Create a reflection report from the note packets below.
+
+Return JSON with this exact shape:
+{{
+  "period_label": "{period_label}",
+  "dominant_themes": ["theme 1", "theme 2"],
+  "belief_shifts": ["shift 1"],
+  "tensions": ["tension 1"],
+  "blindspots": ["blindspot 1"],
+  "questions_for_you": ["question 1"],
+  "recommended_experiment": "one practical experiment"
+}}
+
+Rules:
+- Use only note titles and paths that appear below. Do not invent facts.
+- Be specific and psychologically useful.
+- Return JSON only.
+
+Period: {period_label}
+Notes:
+{notes_payload}
+"""
+
 
 def build_processing_prompt(content: ExtractedContent) -> str:
     """Build the appropriate processing prompt based on source type."""
@@ -198,3 +272,15 @@ def build_flashcard_prompt(content: ExtractedContent, enrichment: AIEnrichment) 
         key_ideas=key_ideas,
         content=content_excerpt,
     )
+
+
+def build_weekly_brief_prompt(*, period_label: str, notes_payload: str) -> str:
+    return WEEKLY_BRIEF_PROMPT.format(period_label=period_label, notes_payload=notes_payload)
+
+
+def build_topic_digest_prompt(*, topic: str, notes_payload: str) -> str:
+    return TOPIC_DIGEST_PROMPT.format(topic=topic, notes_payload=notes_payload)
+
+
+def build_reflection_prompt(*, period_label: str, notes_payload: str) -> str:
+    return REFLECTION_PROMPT.format(period_label=period_label, notes_payload=notes_payload)

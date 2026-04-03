@@ -22,6 +22,9 @@ from vaultmind.core.writer import (
     write_note,
 )
 from vaultmind.schemas import (
+    ArticleCategory,
+    CanonicalSource,
+    ExtractedContent,
     GitHubRepoMetadata,
     NoteFrontmatter,
     NoteStatus,
@@ -31,6 +34,7 @@ from vaultmind.schemas import (
 )
 from vaultmind.utils.display import get_progress, print_error, print_success, print_warning
 from vaultmind.utils.hashing import content_hash
+from vaultmind.utils.tags import normalize_tags
 
 log = structlog.get_logger()
 
@@ -84,6 +88,34 @@ async def _save_url_async(
         content = await extract_source(source, config)
 
         if not content.text:
+            if source.source_type == SourceType.TWEET:
+                progress.update(task, description="Building partial tweet note...")
+                for warning in content.warnings:
+                    print_warning(f"[{warning.code}] {warning.message}")
+
+                try:
+                    partial_path = _write_partial_tweet_note(
+                        source=source,
+                        content=content,
+                        config=config,
+                        tags=tags or [],
+                        folder=folder,
+                    )
+                except ValueError as exc:
+                    print_error(str(exc))
+                    return
+                print_warning(
+                    "Tweet content could not be extracted from X directly. "
+                    "Saved a partial note so you can keep the source URL."
+                )
+                print_success(
+                    f"Saved partial tweet note: {content.title}",
+                    f"📁 {partial_path}\n"
+                    f"🏷️  Tags: {', '.join(normalize_tags(tags or [])) or 'none'}\n"
+                    f"⚠️  Status: partial",
+                )
+                return
+
             print_error("Failed to extract content from URL. The page may be paywalled or empty.")
             return
 
@@ -101,7 +133,7 @@ async def _save_url_async(
         c_hash = content_hash(content.text)
 
         extra_tags = tags or []
-        all_tags = list(dict.fromkeys(enrichment.tags + extra_tags))
+        all_tags = normalize_tags(enrichment.tags + extra_tags)
 
         # Build source-specific frontmatter fields
         fm_kwargs = _build_frontmatter_kwargs(content, source, enrichment, c_hash, provider, all_tags)
@@ -187,6 +219,73 @@ def _build_frontmatter_kwargs(content, source, enrichment, c_hash, provider, all
     return kwargs
 
 
+def _write_partial_tweet_note(
+    *,
+    source: CanonicalSource,
+    content: ExtractedContent,
+    config: AppConfig,
+    tags: list[str],
+    folder: str | None,
+) -> Path:
+    """Write a partial fallback note when tweet text is unavailable."""
+    normalized_tags = normalize_tags(tags)
+    c_hash = content_hash(source.canonical_url)
+    title = content.title or source.canonical_url
+
+    warning_lines = (
+        [f"- [{warning.code}] {warning.message}" for warning in content.warnings]
+        or ["- Extraction returned no usable tweet text."]
+    )
+    body = "\n".join(
+        [
+            f"# {title}",
+            "",
+            "## 🧠 Summary",
+            "Tweet content could not be extracted automatically from X. "
+            "This note is stored as a partial placeholder.",
+            "",
+            "## ⚠️ Extraction Notes",
+            *warning_lines,
+            "",
+            "## 📎 Source Notes",
+            "*Publication: Twitter/X*",
+            f"*Source URL: {source.canonical_url}*",
+        ]
+    )
+
+    frontmatter = NoteFrontmatter(
+        title=title,
+        source=source.original_url,
+        canonical_url=source.canonical_url,
+        type=SourceType.TWEET,
+        author=content.author,
+        saved=datetime.now(timezone.utc),
+        tags=normalized_tags,
+        rating=5,
+        read_time_minutes=0,
+        status=NoteStatus.PARTIAL,
+        content_hash=c_hash,
+        model_used="none",
+        extraction_quality=content.extraction_quality,
+    )
+
+    if folder:
+        target_folder = config.vault_path / folder
+        if not str(target_folder.resolve()).startswith(str(config.vault_path.resolve())):
+            raise ValueError(f"Invalid folder: {folder}. Must be under vault root.")
+        folder_path = str(target_folder)
+    else:
+        folder_path = str(resolve_folder(SourceType.TWEET, ArticleCategory.MISC, config))
+
+    note = RenderedNote(
+        frontmatter=frontmatter,
+        body=body,
+        filename=generate_filename(title, c_hash),
+        folder_path=folder_path,
+    )
+    return write_note(note, config)
+
+
 def _merge_tags(note_path: Path, new_tags: list[str]) -> None:
     """Merge new tags into an existing note's frontmatter."""
     import yaml
@@ -210,8 +309,10 @@ def _merge_tags(note_path: Path, new_tags: list[str]) -> None:
     if not isinstance(fm_data, dict):
         return
 
-    existing_tags = fm_data.get("tags", [])
-    merged = list(dict.fromkeys(existing_tags + new_tags))
+    raw_existing = fm_data.get("tags", [])
+    existing_tags = raw_existing if isinstance(raw_existing, list) else [raw_existing]
+    existing_tags = [tag for tag in existing_tags if isinstance(tag, str)]
+    merged = normalize_tags(existing_tags + new_tags)
     fm_data["tags"] = merged
 
     new_fm = yaml.dump(fm_data, default_flow_style=False, allow_unicode=True, sort_keys=False)
