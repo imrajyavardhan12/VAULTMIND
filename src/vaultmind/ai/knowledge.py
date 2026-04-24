@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from typing import Sequence, TypeVar
+from collections.abc import Sequence
+from typing import TypeVar
 
 import structlog
 from pydantic import BaseModel, Field
@@ -149,7 +150,10 @@ def _parse_json_model(response: str, model: type[ModelT]) -> ModelT:
 
 def _fallback_weekly_brief(notes: Sequence[VaultNoteRecord], *, period_label: str) -> WeeklyBrief:
     top_tags = _top_tags(notes, limit=3)
-    themes = [BriefTheme(name=tag, insight=f"You repeatedly saved notes about {tag}.") for tag in top_tags]
+    themes = [
+        BriefTheme(name=tag, insight=f"You repeatedly saved notes about {tag}.")
+        for tag in top_tags
+    ]
     highlights = [
         NoteReference(title=note.title, path=note.relative_path, reason="Frequently relevant this period.")
         for note in list(notes)[:3]
@@ -157,11 +161,13 @@ def _fallback_weekly_brief(notes: Sequence[VaultNoteRecord], *, period_label: st
 
     return WeeklyBrief(
         period_label=period_label,
-        one_sentence_takeaway="Your recent notes cluster around a few recurring themes worth consolidating.",
+        one_sentence_takeaway=(
+            "Your recent notes cluster around a few recurring themes worth consolidating."
+        ),
         themes=themes,
         highlights=highlights,
         gaps=["No explicit capture of opposing viewpoints in some topics."],
-        suggested_next_steps=["Run `vm digest \"top theme\"` to synthesize your strongest thread."],
+        suggested_next_steps=['Run `vm digest "top theme"` to synthesize your strongest thread.'],
     )
 
 
@@ -179,11 +185,17 @@ def _fallback_topic_digest(topic: str, matches: Sequence[SearchMatch]) -> TopicD
         tensions=["Some notes optimize for speed while others optimize for rigor."],
         standout_notes=standout,
         open_questions=[f"What would change your current view on {topic}?"],
-        moc_sections=[MocSection(heading="Core Notes", summary="Most relevant source notes", note_paths=note_paths)],
+        moc_sections=[
+            MocSection(heading="Core Notes", summary="Most relevant source notes", note_paths=note_paths)
+        ],
     )
 
 
-def _fallback_reflection(notes: Sequence[VaultNoteRecord], *, period_label: str) -> ReflectionReport:
+def _fallback_reflection(
+    notes: Sequence[VaultNoteRecord],
+    *,
+    period_label: str,
+) -> ReflectionReport:
     themes = _top_tags(notes, limit=4)
     return ReflectionReport(
         period_label=period_label,
@@ -192,7 +204,9 @@ def _fallback_reflection(notes: Sequence[VaultNoteRecord], *, period_label: str)
         tensions=["Balancing breadth of topics with depth on any single thread."],
         blindspots=["Few explicit notes on disconfirming evidence."],
         questions_for_you=["Which single theme deserves a 30-day deeper focus?"],
-        recommended_experiment="Pick one theme and write a one-page synthesis every Sunday for four weeks.",
+        recommended_experiment=(
+            "Pick one theme and write a one-page synthesis every Sunday for four weeks."
+        ),
     )
 
 

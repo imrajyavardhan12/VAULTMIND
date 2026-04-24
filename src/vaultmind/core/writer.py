@@ -6,6 +6,7 @@ import re
 import tempfile
 import unicodedata
 from pathlib import Path
+from typing import Any
 
 import structlog
 import yaml
@@ -145,7 +146,7 @@ def write_markdown_page(
     path: Path,
     *,
     body: str,
-    frontmatter: dict | None = None,
+    frontmatter: dict[str, Any] | None = None,
 ) -> Path:
     """Atomically write a generic markdown page with optional frontmatter."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -170,7 +171,7 @@ def write_markdown_page(
     return path
 
 
-def parse_frontmatter(file_path: Path) -> dict | None:
+def parse_frontmatter(file_path: Path) -> dict[str, Any] | None:
     """Parse YAML frontmatter from a markdown file. Returns None on failure."""
     try:
         text = file_path.read_text(encoding="utf-8")

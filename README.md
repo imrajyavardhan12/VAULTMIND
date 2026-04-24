@@ -72,6 +72,18 @@ vm save <url> --verbose                # Debug logging to stderr
 
 **Duplicate detection:** If a URL was already saved, VaultMind skips it (use `--force` to re-process). Passing `--tag` on a duplicate merges the new tags into the existing note.
 
+### `vm compile`
+
+Compile immutable raw markdown sources into LLM-authored wiki concept pages. This is the Karpathy-style wiki loop: Obsidian Web Clipper saves original articles into `📥 Raw/`, then VaultMind synthesizes them into `🗺️ Wiki/🧠 Concepts/` and tracks progress in `vault.manifest.json`.
+
+```bash
+vm compile             # Incremental: only new/changed raw sources
+vm compile --full      # Recompile every raw source
+vm compile --dry-run   # Preview source and concept targets without writing
+```
+
+VaultMind also falls back to an existing `Clippings/` folder when `📥 Raw/` is not present, so older Web Clipper setups continue to work.
+
 ### `vm find [query]`
 
 Search across all saved notes by keyword or fuzzy match. Without a query, shows recent notes.
@@ -159,6 +171,8 @@ Show the current VaultMind version.
 
 You can also place `config.yaml` and `.env` in your current working directory — VaultMind checks there first.
 
+The canonical compile folders are `📥 Raw/` for immutable clipped sources and `🗺️ Wiki/` for generated concept pages. `vm init` creates both, along with the personal-note folders used by `vm save`.
+
 To reconfigure, run `vm init` again.
 
 ## Project Structure
@@ -175,6 +189,8 @@ src/vaultmind/
 │   ├── reddit.py        # Reddit JSON API client
 │   ├── github.py        # GitHub REST API client
 │   ├── twitter.py       # Twitter syndication + fallback
+│   ├── raw_scanner.py   # Raw markdown scanner for vm compile
+│   ├── manifest.py      # vault.manifest.json helpers
 │   ├── renderers.py     # Source-specific Markdown body renderers
 │   ├── writer.py        # Atomic vault file writer
 │   ├── linker.py        # Related note finder (Jaccard similarity)
@@ -184,10 +200,11 @@ src/vaultmind/
 │   └── moc.py           # Map of Content generator
 ├── ai/
 │   ├── pipeline.py      # Content → AIEnrichment flow
+│   ├── compiler.py      # Raw sources → wiki concept articles
 │   ├── prompts.py       # All prompt templates (provider-agnostic)
 │   ├── knowledge.py     # Brief / Digest / Reflect synthesis
 │   ├── json_utils.py    # JSON response cleanup
-│   └── providers/       # Anthropic, OpenAI, Ollama (stub)
+│   └── providers/       # Anthropic, OpenAI, Ollama
 ├── commands/            # One file per CLI command
 └── utils/               # Display, hashing, URLs, tags, logging
 ```

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from vaultmind.ai.knowledge import (
@@ -30,7 +30,7 @@ def _note(title: str, path_slug: str) -> VaultNoteRecord:
         path=Path(f"/tmp/{path_slug}.md"),
         relative_path=f"📚 Sources/AI/{path_slug}",
         title=title,
-        saved_at=datetime.now(timezone.utc),
+        saved_at=datetime.now(UTC),
         tags=["ai", "tools"],
         source_type="article",
         rating=8,

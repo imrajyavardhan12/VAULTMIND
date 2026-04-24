@@ -40,6 +40,16 @@ class FolderConfig(BaseModel):
     mocs: str = "🗺️ MOCs"
     ideas: str = "💡 Ideas"
     meta: str = "⚙️ Meta"
+    # Raw sources folder — populated by Obsidian Web Clipper
+    # This is where vm compile reads from (immutable original content)
+    raw: str = "📥 Raw"
+    # Wiki directory (LLM-authored concept articles)
+    wiki: str = "🗺️ Wiki"
+    wiki_concepts: str = "🧠 Concepts"
+    wiki_queries: str = "📊 Queries"
+    wiki_inbox: str = "📋 Inbox"
+    wiki_weekly: str = "📅 Weekly"
+    wiki_index: str = "📇 Index"
 
 
 class PreferencesConfig(BaseModel):
@@ -63,7 +73,11 @@ def _find_env_file() -> str:
 class EnvSettings(BaseSettings):
     """Secrets loaded from .env file."""
 
-    model_config = SettingsConfigDict(env_file=_find_env_file(), env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=_find_env_file(),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     anthropic_api_key: str = ""
     openai_api_key: str = ""

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from difflib import SequenceMatcher
-import re
 
 from vaultmind.core.linker import _jaccard, _normalize_tags, _tokenize_title
 from vaultmind.core.vault_index import VaultNoteRecord, truncate_for_ai
@@ -131,4 +130,4 @@ def build_match_excerpt(body: str, query: str, *, radius: int = 160) -> str:
 
 
 def _recent_sort_key(note: VaultNoteRecord) -> datetime:
-    return note.saved_at or datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return note.saved_at or datetime(1970, 1, 1, tzinfo=UTC)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import typer
 from rich.panel import Panel
@@ -50,7 +50,7 @@ def compute_vault_stats(notes: list[VaultNoteRecord], config: AppConfig) -> Vaul
     """Compute high-level and quality-oriented vault metrics."""
     del config  # reserved for future config-dependent metrics
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     cutoff = now - timedelta(days=7)
 
     vaultmind_notes = [note for note in notes if note.vaultmind]

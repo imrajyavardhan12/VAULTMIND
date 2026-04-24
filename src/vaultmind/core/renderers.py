@@ -7,8 +7,8 @@ from vaultmind.schemas import (
     ExtractedContent,
     Flashcard,
     GitHubRepoMetadata,
-    RelatedNoteMatch,
     RedditMetadata,
+    RelatedNoteMatch,
     SourceType,
 )
 
@@ -121,8 +121,8 @@ def _render_github_body(content: ExtractedContent, enrichment: AIEnrichment) -> 
     # Tool Card header
     if isinstance(meta, GitHubRepoMetadata):
         sections.append("## 🛠️ Tool Card")
-        sections.append(f"| Field | Value |")
-        sections.append(f"|---|---|")
+        sections.append("| Field | Value |")
+        sections.append("|---|---|")
         if meta.description:
             sections.append(f"| **Description** | {meta.description} |")
         if meta.language:

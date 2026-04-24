@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["Provider", "get_provider"]
+
 from vaultmind.ai.providers.base import Provider
 from vaultmind.config import AppConfig
 
@@ -12,11 +14,13 @@ def get_provider(config: AppConfig, tier: str = "fast") -> Provider:
     Tries providers in fallback_chain order until one is available.
     """
     from vaultmind.ai.providers.anthropic import AnthropicProvider
+    from vaultmind.ai.providers.ollama import OllamaProvider
     from vaultmind.ai.providers.openai import OpenAIProvider
 
     provider_map: dict[str, type[Provider]] = {
         "anthropic": AnthropicProvider,
         "openai": OpenAIProvider,
+        "ollama": OllamaProvider,
     }
 
     for provider_name in config.ai.fallback_chain:
@@ -35,11 +39,18 @@ def get_provider(config: AppConfig, tier: str = "fast") -> Provider:
 
         model = getattr(provider_config.models, tier, provider_config.models.fast)
 
+        if provider_name == "ollama":
+            return OllamaProvider(
+                base_url=provider_config.base_url or config.env.ollama_base_url,
+                model=model,
+                max_tokens=config.ai.max_tokens,
+            )
+
         return provider_map[provider_name](
             api_key=getattr(config.env, f"{provider_name}_api_key", ""),
             model=model,
             max_tokens=config.ai.max_tokens,
-        )
+        )  # type: ignore[call-arg]
 
     from vaultmind.utils.display import print_error
 

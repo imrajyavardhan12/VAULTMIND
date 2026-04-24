@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import structlog
 
-from vaultmind.ai.pipeline import generate_flashcards, process_content
-from vaultmind.ai.providers import get_provider
+from vaultmind.ai.pipeline import AIEnrichment, generate_flashcards, process_content
+from vaultmind.ai.providers import Provider, get_provider
 from vaultmind.config import AppConfig
 from vaultmind.core.extractors import extract_source
 from vaultmind.core.linker import find_related_notes
@@ -136,8 +136,9 @@ async def _save_url_async(
         all_tags = normalize_tags(enrichment.tags + extra_tags)
 
         # Build source-specific frontmatter fields
-        fm_kwargs = _build_frontmatter_kwargs(content, source, enrichment, c_hash, provider, all_tags)
-        frontmatter = NoteFrontmatter(**fm_kwargs)
+        frontmatter = _build_frontmatter_kwargs(
+            content, source, enrichment, c_hash, provider, all_tags
+        )
 
         should_generate = config.ai.generate_flashcards and not no_flash
         flashcards = (
@@ -186,37 +187,53 @@ async def _save_url_async(
     )
 
 
-def _build_frontmatter_kwargs(content, source, enrichment, c_hash, provider, all_tags) -> dict:
+def _build_frontmatter_kwargs(
+    content: ExtractedContent,
+    source: CanonicalSource,
+    enrichment: AIEnrichment,
+    c_hash: str,
+    provider: Provider,
+    all_tags: list[str],
+) -> NoteFrontmatter:
     """Build frontmatter kwargs, including source-specific fields."""
-    kwargs: dict = {
-        "title": content.title,
-        "source": source.original_url,
-        "canonical_url": source.canonical_url,
-        "type": source.source_type,
-        "author": content.author,
-        "saved": datetime.now(timezone.utc),
-        "tags": all_tags,
-        "rating": enrichment.rating,
-        "read_time_minutes": enrichment.read_time_minutes,
-        "status": NoteStatus.PROCESSED if content.extraction_quality >= 0.5 else NoteStatus.PARTIAL,
-        "content_hash": c_hash,
-        "model_used": provider.model,
-        "extraction_quality": content.extraction_quality,
-    }
-
-    # Reddit-specific
     meta = content.source_metadata
+
+    # Reddit-specific fields
+    subreddit: str | None = None
     if isinstance(meta, RedditMetadata):
-        kwargs["subreddit"] = meta.subreddit
+        subreddit = meta.subreddit
 
-    # GitHub-specific
+    # GitHub-specific fields
+    repo_name: str | None = None
+    language: str | None = None
+    stars: int | None = None
+    last_updated: str | None = None
     if isinstance(meta, GitHubRepoMetadata):
-        kwargs["repo_name"] = f"{meta.owner}/{meta.repo}"
-        kwargs["language"] = meta.language
-        kwargs["stars"] = meta.stars
-        kwargs["last_updated"] = meta.last_pushed_at[:10] if meta.last_pushed_at else None
+        repo_name = f"{meta.owner}/{meta.repo}"
+        language = meta.language
+        stars = meta.stars
+        last_updated = meta.last_pushed_at[:10] if meta.last_pushed_at else None
 
-    return kwargs
+    return NoteFrontmatter(
+        title=content.title,
+        source=source.original_url,
+        canonical_url=source.canonical_url,
+        type=source.source_type,
+        author=content.author,
+        saved=datetime.now(UTC),
+        tags=all_tags,
+        rating=enrichment.rating,
+        read_time_minutes=enrichment.read_time_minutes,
+        status=NoteStatus.PROCESSED if content.extraction_quality > 0.5 else NoteStatus.PARTIAL,
+        content_hash=c_hash,
+        model_used=provider.model,
+        extraction_quality=content.extraction_quality,
+        subreddit=subreddit,
+        repo_name=repo_name,
+        language=language,
+        stars=stars,
+        last_updated=last_updated,
+    )
 
 
 def _write_partial_tweet_note(
@@ -259,7 +276,7 @@ def _write_partial_tweet_note(
         canonical_url=source.canonical_url,
         type=SourceType.TWEET,
         author=content.author,
-        saved=datetime.now(timezone.utc),
+        saved=datetime.now(UTC),
         tags=normalized_tags,
         rating=5,
         read_time_minutes=0,

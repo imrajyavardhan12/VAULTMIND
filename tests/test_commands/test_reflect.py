@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from vaultmind.ai.knowledge import ReflectionReport
@@ -34,13 +34,21 @@ def test_reflect_uses_deep_tier_and_filters_days(monkeypatch, test_config):
 
     called: dict[str, object] = {}
     notes = [
-        _note("recent", "2026-03-29T10:00:00+00:00"),
+        _note("recent", "2026-04-10T10:00:00+00:00"),
         _note("old", "2026-01-01T10:00:00+00:00"),
     ]
 
     monkeypatch.setattr(reflect_cmd, "setup_logging", lambda verbose=False: None)
     monkeypatch.setattr(reflect_cmd, "load_config", lambda: test_config)
     monkeypatch.setattr(reflect_cmd, "scan_vault_notes", lambda config, only_vaultmind=True: notes)
+    real_filter = reflect_cmd.filter_notes_by_days
+    monkeypatch.setattr(
+        reflect_cmd,
+        "filter_notes_by_days",
+        lambda notes, *, days, now=None: real_filter(
+            notes, days=days, now=datetime(2026, 4, 11, tzinfo=UTC)
+        ),
+    )
 
     def fake_get_provider(config, tier="fast"):
         called["tier"] = tier

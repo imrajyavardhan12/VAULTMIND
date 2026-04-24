@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
-from typing import Sequence
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 from vaultmind.core.vault_index import VaultNoteRecord
 from vaultmind.schemas import Flashcard

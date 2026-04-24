@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import httpx
@@ -58,7 +59,7 @@ def _build_headers(config: AppConfig) -> dict[str, str]:
     stop=stop_after_attempt(3),
     reraise=True,
 )
-async def _fetch_repo(owner: str, repo: str, headers: dict[str, str]) -> dict:
+async def _fetch_repo(owner: str, repo: str, headers: dict[str, str]) -> dict[str, Any]:
     """Fetch repository metadata from the GitHub REST API."""
     url = f"{_API_BASE}/repos/{owner}/{repo}"
     async with httpx.AsyncClient(headers=headers, follow_redirects=True, timeout=20.0) as client:
@@ -66,7 +67,7 @@ async def _fetch_repo(owner: str, repo: str, headers: dict[str, str]) -> dict:
     if resp.status_code == 429 or resp.status_code >= 500:
         raise GitHubAPIError(f"GitHub returned {resp.status_code}")
     resp.raise_for_status()
-    return resp.json()
+    return cast(dict[str, Any], resp.json())
 
 
 @retry(
@@ -79,7 +80,11 @@ async def _fetch_readme(owner: str, repo: str, headers: dict[str, str]) -> str |
     """Fetch the raw README content. Returns None if not found."""
     url = f"{_API_BASE}/repos/{owner}/{repo}/readme"
     readme_headers = {**headers, "Accept": "application/vnd.github.raw+json"}
-    async with httpx.AsyncClient(headers=readme_headers, follow_redirects=True, timeout=20.0) as client:
+    async with httpx.AsyncClient(
+        headers=readme_headers,
+        follow_redirects=True,
+        timeout=20.0,
+    ) as client:
         resp = await client.get(url)
     if resp.status_code == 404:
         return None
@@ -146,7 +151,8 @@ async def extract_github(source: CanonicalSource, config: AppConfig) -> Extracte
         quality = min(quality, 0.7)
 
     if readme is None:
-        warnings.append(ExtractionWarning(code="readme_missing", message="Repository has no README"))
+        msg = "Repository has no README"
+        warnings.append(ExtractionWarning(code="readme_missing", message=msg))
         quality = min(quality, 0.7)
 
     description = repo_data.get("description")

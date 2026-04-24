@@ -26,9 +26,9 @@ uv.lock
 config.yaml
 
 # Markdown files (except README.md)
-PRD.md
-COMPLETE_PROJECT_GUIDE.md
-PHASE3_IMPLEMENTATION_REPORT.md
+# PRD.md
+# COMPLETE_PROJECT_GUIDE.md
+# PHASE3_IMPLEMENTATION_REPORT.md
 
 # Downloaded archives
 *.zip

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from vaultmind.ai.knowledge import WeeklyBrief
@@ -34,15 +34,21 @@ def test_brief_filters_by_days_and_uses_fast_tier(monkeypatch, test_config):
 
     called: dict[str, object] = {}
 
+    notes = [
+        _note("recent", "2026-04-10T10:00:00+00:00"),
+        _note("old", "2026-01-01T10:00:00+00:00"),
+    ]
+
     monkeypatch.setattr(brief_cmd, "setup_logging", lambda verbose=False: None)
     monkeypatch.setattr(brief_cmd, "load_config", lambda: test_config)
+    monkeypatch.setattr(brief_cmd, "scan_vault_notes", lambda config, only_vaultmind=True: notes)
+    real_filter = brief_cmd.filter_notes_by_days
     monkeypatch.setattr(
         brief_cmd,
-        "scan_vault_notes",
-        lambda config, only_vaultmind=True: [
-            _note("recent", "2026-03-29T10:00:00+00:00"),
-            _note("old", "2026-01-01T10:00:00+00:00"),
-        ],
+        "filter_notes_by_days",
+        lambda notes, *, days, now=None: real_filter(
+            notes, days=days, now=datetime(2026, 4, 11, tzinfo=UTC)
+        ),
     )
 
     def fake_get_provider(config, tier="fast"):

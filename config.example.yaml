@@ -11,6 +11,13 @@ folders:
   mocs: "🗺️ MOCs"
   ideas: "💡 Ideas"
   meta: "⚙️ Meta"
+  raw: "📥 Raw"
+  wiki: "🗺️ Wiki"
+  wiki_concepts: "🧠 Concepts"
+  wiki_queries: "📊 Queries"
+  wiki_inbox: "📋 Inbox"
+  wiki_weekly: "📅 Weekly"
+  wiki_index: "📇 Index"
 
 ai:
   default_provider: "openai"

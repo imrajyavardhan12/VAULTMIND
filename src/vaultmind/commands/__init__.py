@@ -8,6 +8,7 @@ import typer
 def register_commands(app: typer.Typer) -> None:
     """Register all commands on the main Typer app."""
     from vaultmind.commands.brief import brief
+    from vaultmind.commands.compile import compile
     from vaultmind.commands.digest import digest
     from vaultmind.commands.find import find
     from vaultmind.commands.flashcard import flashcard
@@ -17,6 +18,7 @@ def register_commands(app: typer.Typer) -> None:
 
     app.command("init")(init)
     app.command("brief")(brief)
+    app.command("compile")(compile)
     app.command("digest")(digest)
     app.command("find")(find)
     app.command("flashcard")(flashcard)

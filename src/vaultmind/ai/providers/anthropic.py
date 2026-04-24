@@ -33,7 +33,7 @@ class AnthropicProvider:
             messages=[{"role": "user", "content": prompt}],
         )
 
-        text = message.content[0].text
+        text = message.content[0].text  # type: ignore[union-attr]
         log.info(
             "anthropic_response",
             model=self.model,

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 
 from vaultmind.commands import register_commands
@@ -20,8 +18,8 @@ app = typer.Typer(
 @app.command()
 def save(
     url: str = typer.Argument(help="URL to process and save"),
-    tag: Optional[list[str]] = typer.Option(None, "--tag", "-t", help="Extra tags (repeatable)"),
-    folder: Optional[str] = typer.Option(
+    tag: list[str] | None = typer.Option(None, "--tag", "-t", help="Extra tags (repeatable)"),
+    folder: str | None = typer.Option(
         None, "--folder", "-f", help="Override folder routing (vault-relative)"
     ),
     force: bool = typer.Option(False, "--force", help="Re-process even if already saved"),

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from vaultmind.commands.flashcard import FlashcardSession, QuizCard, build_quiz_cards
@@ -16,7 +16,7 @@ def _deck(slug: str, tags: list[str], cards: int) -> NoteFlashcardDeck:
         path=Path(f"/tmp/{slug}.md"),
         relative_path=f"📚 Sources/AI/{slug}",
         title=slug,
-        saved_at=datetime.now(timezone.utc),
+        saved_at=datetime.now(UTC),
         tags=tags,
         source_type="article",
         rating=8,

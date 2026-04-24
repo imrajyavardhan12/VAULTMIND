@@ -40,7 +40,7 @@ async def test_extract_tweet_rejects_javascript_gate_page(monkeypatch):
     monkeypatch.setattr(
         "vaultmind.core.twitter.trafilatura.extract",
         lambda *args, **kwargs: (
-            "We’ve detected that JavaScript is disabled in this browser. "
+            "We've detected that JavaScript is disabled in this browser. "
             "Please enable JavaScript or switch to a supported browser to continue using x.com. "
             "Some privacy related extensions may cause issues on x.com."
         ),

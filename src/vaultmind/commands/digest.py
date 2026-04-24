@@ -45,7 +45,8 @@ def digest(topic: str, limit: int = 15, no_moc: bool = False, verbose: bool = Fa
 
 def render_topic_digest(report: TopicDigest, matches: list[SearchMatch]) -> None:
     """Render digest output with rich panels/tables."""
-    console.print(Panel(report.thesis, title=f"📚 Topic Digest — {report.topic}", border_style="blue"))
+    title = f"📚 Topic Digest — {report.topic}"
+    console.print(Panel(report.thesis, title=title, border_style="blue"))
 
     if report.patterns:
         pattern_table = Table(title="Patterns")
@@ -73,7 +74,10 @@ def render_topic_digest(report: TopicDigest, matches: list[SearchMatch]) -> None
             standout_table.add_row(match.note.title, match.note.relative_path, "High relevance")
     console.print(standout_table)
 
-    questions = "\n".join(f"- {q}" for q in report.open_questions) if report.open_questions else "- None"
+    if report.open_questions:
+        questions = "\n".join(f"- {q}" for q in report.open_questions)
+    else:
+        questions = "- None"
     console.print(Panel(questions, title="Open Questions", border_style="magenta"))
 
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from urllib.parse import urlparse
+from typing import Any, cast
 
 import httpx
 import structlog
@@ -38,7 +38,7 @@ class RedditAPIError(Exception):
     stop=stop_after_attempt(3),
     reraise=True,
 )
-async def _fetch_json(url: str) -> dict:
+async def _fetch_json(url: str) -> dict[str, Any]:
     """Fetch a Reddit JSON endpoint with retry on 429 / 5xx."""
     json_url = url.rstrip("/") + ".json"
     async with httpx.AsyncClient(
@@ -51,10 +51,10 @@ async def _fetch_json(url: str) -> dict:
     if resp.status_code == 429 or resp.status_code >= 500:
         raise RedditAPIError(f"Reddit returned {resp.status_code}")
     resp.raise_for_status()
-    return resp.json()
+    return cast(dict[str, Any], resp.json())
 
 
-def _parse_comments(comment_listing: dict) -> list[RedditComment]:
+def _parse_comments(comment_listing: dict[str, Any]) -> list[RedditComment]:
     """Extract the top comments from the comment listing."""
     comments: list[RedditComment] = []
     children = comment_listing.get("data", {}).get("children", [])
@@ -121,7 +121,12 @@ async def extract_reddit(source: CanonicalSource, config: AppConfig) -> Extracte
             title=source.canonical_url,
             text="",
             extraction_quality=0.2,
-            warnings=[ExtractionWarning(code="unexpected_format", message="Unexpected Reddit JSON structure")],
+            warnings=[
+                ExtractionWarning(
+                    code="unexpected_format",
+                    message="Unexpected Reddit JSON structure",
+                )
+            ],
         )
 
     post_data = data[0].get("data", {}).get("children", [{}])[0].get("data", {})
@@ -135,14 +140,21 @@ async def extract_reddit(source: CanonicalSource, config: AppConfig) -> Extracte
 
     # Handle deleted posts
     if selftext == "[deleted]" or selftext == "[removed]":
-        warnings.append(ExtractionWarning(code="deleted_post", message=f"Post content is {selftext}"))
+        warnings.append(
+            ExtractionWarning(code="deleted_post", message=f"Post content is {selftext}")
+        )
         selftext = ""
         quality = min(quality, 0.5)
 
     # Parse comments
     comments = _parse_comments(data[1])
     if not comments and not selftext:
-        warnings.append(ExtractionWarning(code="no_content", message="No selftext or comments available"))
+        warnings.append(
+            ExtractionWarning(
+                code="no_content",
+                message="No selftext or comments available",
+            )
+        )
         quality = min(quality, 0.3)
 
     text = _build_text(title, selftext, comments)

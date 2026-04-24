@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from vaultmind.config import AppConfig
@@ -60,23 +60,20 @@ def scan_vault_notes(config: AppConfig, *, only_vaultmind: bool = True) -> list[
         except ValueError:
             continue
 
+        _fm = frontmatter
         records.append(
             VaultNoteRecord(
                 path=path,
                 relative_path=relative_path,
                 title=title,
-                saved_at=parse_saved_at(frontmatter.get("saved")),
-                tags=_normalize_tag_list(frontmatter.get("tags")),
-                source_type=frontmatter.get("type") if isinstance(frontmatter.get("type"), str) else None,
-                rating=_parse_optional_int(frontmatter.get("rating")),
-                read_time_minutes=_parse_optional_int(frontmatter.get("read_time_minutes")),
-                status=frontmatter.get("status") if isinstance(frontmatter.get("status"), str) else None,
-                canonical_url=(
-                    frontmatter.get("canonical_url")
-                    if isinstance(frontmatter.get("canonical_url"), str)
-                    else None
-                ),
-                source=frontmatter.get("source") if isinstance(frontmatter.get("source"), str) else None,
+                saved_at=parse_saved_at(_fm.get("saved")),
+                tags=_normalize_tag_list(_fm.get("tags")),
+                source_type=_fm.get("type") if isinstance(_fm.get("type"), str) else None,
+                rating=_parse_optional_int(_fm.get("rating")),
+                read_time_minutes=_parse_optional_int(_fm.get("read_time_minutes")),
+                status=_fm.get("status") if isinstance(_fm.get("status"), str) else None,
+                canonical_url=_fm.get("canonical_url") if isinstance(_fm.get("canonical_url"), str) else None,
+                source=_fm.get("source") if isinstance(_fm.get("source"), str) else None,
                 vaultmind=vaultmind,
                 body=body,
                 summary=summary,
@@ -97,7 +94,7 @@ def filter_notes_by_days(
     if days <= 0:
         return []
 
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     cutoff = current - timedelta(days=days)
 
     return [note for note in notes if note.saved_at is not None and note.saved_at >= cutoff]
@@ -106,7 +103,7 @@ def filter_notes_by_days(
 def parse_saved_at(value: object) -> datetime | None:
     """Parse frontmatter `saved` values into timezone-aware datetimes."""
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
 
     if not isinstance(value, str):
         return None
@@ -123,7 +120,7 @@ def parse_saved_at(value: object) -> datetime | None:
     except ValueError:
         return None
 
-    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def read_markdown_body(path: Path) -> str:
@@ -181,9 +178,11 @@ def format_note_packet(note: VaultNoteRecord, *, max_chars: int = 1200) -> str:
     saved_label = note.saved_at.isoformat() if note.saved_at else "unknown"
     tags_label = ", ".join(note.tags) if note.tags else "none"
     summary = truncate_for_ai(note.summary or note.body, max_chars=max_chars)
+    canonical = note.canonical_url or note.relative_path
 
     return (
         f"Title: {note.title}\n"
+        f"URL: {canonical}\n"
         f"Path: {note.relative_path}\n"
         f"Saved: {saved_label}\n"
         f"Tags: {tags_label}\n"
@@ -216,5 +215,5 @@ def _parse_optional_int(value: object) -> int | None:
 
 
 def _record_sort_key(note: VaultNoteRecord) -> tuple[datetime, str]:
-    fallback = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    fallback = datetime(1970, 1, 1, tzinfo=UTC)
     return note.saved_at or fallback, note.title.lower()

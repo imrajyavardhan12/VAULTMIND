@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -55,7 +55,7 @@ def test_scan_vault_notes_skips_non_vaultmind_by_default(test_config):
 
 
 def test_filter_notes_by_days(test_config):
-    now = datetime(2026, 3, 30, tzinfo=timezone.utc)
+    now = datetime(2026, 3, 30, tzinfo=UTC)
     recent_path = test_config.vault_path / "📚 Sources" / "AI" / "recent.md"
     old_path = test_config.vault_path / "📚 Sources" / "AI" / "old.md"
 

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 from vaultmind.config import AppConfig
 from vaultmind.core.writer import slugify, write_markdown_page
@@ -80,7 +81,7 @@ def write_moc(
     """Write a generated MOC page to the vault."""
     path = get_moc_path(topic, config)
     body = render_moc_markdown(topic, digest, matches)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     frontmatter = {
         "title": f"{topic} MOC",

@@ -9,7 +9,7 @@ from pathlib import Path
 import typer
 import yaml
 
-from vaultmind.utils.display import console, print_error, print_success, print_warning
+from vaultmind.utils.display import console, print_success, print_warning
 
 CONFIG_DIR = Path.home() / ".config" / "vaultmind"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
@@ -17,6 +17,8 @@ ENV_PATH = CONFIG_DIR / ".env"
 
 VAULT_FOLDERS = [
     "📥 Inbox",
+    "📥 Raw",
+    "📥 Raw/assets",
     "📚 Sources",
     "📚 Sources/AI",
     "📚 Sources/Tech",
@@ -33,6 +35,11 @@ VAULT_FOLDERS = [
     "📊 Digests/Weekly",
     "📊 Digests/Monthly",
     "🗺️ MOCs",
+    "🗺️ Wiki",
+    "🗺️ Wiki/🧠 Concepts",
+    "🗺️ Wiki/📊 Queries",
+    "🗺️ Wiki/📋 Inbox",
+    "🗺️ Wiki/📅 Weekly",
     "💡 Ideas",
     "⚙️ Meta",
 ]
@@ -113,11 +120,11 @@ def _ask_provider() -> tuple[str, str]:
     provider = provider_map.get(choice, "openai")
 
     if provider == "ollama":
-        console.print(f"  [green]✓[/green] Selected Ollama (no API key needed)")
+        console.print("  [green]✓[/green] Selected Ollama (no API key needed)")
         return provider, ""
 
     key_name = "OpenAI" if provider == "openai" else "Anthropic"
-    console.print(f"\n  Get your key from:")
+    console.print("\n  Get your key from:")
     if provider == "openai":
         console.print("  [dim]https://platform.openai.com/api-keys[/dim]")
     else:
@@ -129,7 +136,7 @@ def _ask_provider() -> tuple[str, str]:
         print_warning("No API key provided. You can add it later in ~/.config/vaultmind/.env")
         return provider, ""
 
-    console.print(f"  [green]✓[/green] API key saved")
+    console.print("  [green]✓[/green] API key saved")
     return provider, api_key.strip()
 
 
@@ -145,7 +152,7 @@ def _create_vault_folders(vault_path: Path) -> None:
     if created > 0:
         console.print(f"  [green]✓[/green] Created {created} vault folders")
     else:
-        console.print(f"  [dim]Vault folders already exist[/dim]")
+        console.print("  [dim]Vault folders already exist[/dim]")
 
 
 def _write_config(vault_path: Path, provider: str) -> None:
@@ -170,6 +177,13 @@ def _write_config(vault_path: Path, provider: str) -> None:
             "mocs": "🗺️ MOCs",
             "ideas": "💡 Ideas",
             "meta": "⚙️ Meta",
+            "raw": "📥 Raw",
+            "wiki": "🗺️ Wiki",
+            "wiki_concepts": "🧠 Concepts",
+            "wiki_queries": "📊 Queries",
+            "wiki_inbox": "📋 Inbox",
+            "wiki_weekly": "📅 Weekly",
+            "wiki_index": "📇 Index",
         },
         "ai": {
             "default_provider": provider,

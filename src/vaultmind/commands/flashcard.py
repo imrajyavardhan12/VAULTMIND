@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import random
 import sys
+from dataclasses import dataclass, field
 
 import typer
 from rich.panel import Panel
@@ -145,7 +145,8 @@ def _run_interactive_session(cards: list[QuizCard]) -> None:
             content = f"**Q:** {current.card.question}\n\n*Press space to flip*\n\n{status}"
 
         console.print(Panel(content, title=f"Flashcard {progress}", border_style="cyan"))
-        command = input("[space]=flip, [n]=next, [p]=prev, [k]=known, [u]=unsure, [q]=quit: ").strip().lower()
+        prompt = "[space]=flip, [n]=next, [p]=prev, [k]=known, [u]=unsure, [q]=quit: "
+        command = input(prompt).strip().lower()
 
         if command in {"", " "}:
             session.flip()

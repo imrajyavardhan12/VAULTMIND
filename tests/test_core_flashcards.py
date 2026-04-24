@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from vaultmind.core.flashcards import collect_flashcard_decks, extract_flashcards_from_body
@@ -14,7 +14,7 @@ def _note_with_body(body: str, slug: str = "note") -> VaultNoteRecord:
         path=Path(f"/tmp/{slug}.md"),
         relative_path=f"📚 Sources/AI/{slug}",
         title=slug,
-        saved_at=datetime.now(timezone.utc),
+        saved_at=datetime.now(UTC),
         tags=["ai"],
         source_type="article",
         rating=7,

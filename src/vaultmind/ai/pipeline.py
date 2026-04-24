@@ -5,13 +5,15 @@ Flow: ExtractedContent -> AIEnrichment
 
 from __future__ import annotations
 
+__all__ = ["AIEnrichment", "generate_flashcards", "process_content"]
+
 import json
 
 import structlog
 
 from vaultmind.ai.json_utils import clean_json_response
-from vaultmind.ai.providers.base import Provider
 from vaultmind.ai.prompts import SYSTEM_PROMPT, build_flashcard_prompt, build_processing_prompt
+from vaultmind.ai.providers.base import Provider
 from vaultmind.schemas import AIEnrichment, ArticleCategory, ExtractedContent, Flashcard
 
 log = structlog.get_logger()
@@ -26,9 +28,8 @@ async def process_content(content: ExtractedContent, provider: Provider) -> AIEn
     # Truncate content for token limits
     if len(content.text) > MAX_CONTENT_CHARS:
         original_text = content.text
-        content = content.model_copy(
-            update={"text": original_text[:MAX_CONTENT_CHARS] + "\n\n[Content truncated for processing]"}
-        )
+        truncated_text = original_text[:MAX_CONTENT_CHARS] + "\n\n[Content truncated for processing]"
+        content = content.model_copy(update={"text": truncated_text})
         log.info("content_truncated", original=len(original_text), truncated=MAX_CONTENT_CHARS)
 
     prompt = build_processing_prompt(content)

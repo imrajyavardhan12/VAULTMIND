@@ -1,7 +1,7 @@
 """Tests for AI pipeline."""
 
 from vaultmind.ai.pipeline import _parse_ai_response, _parse_flashcard_response
-from vaultmind.schemas import CanonicalSource, ExtractedContent, SourceType, ArticleCategory
+from vaultmind.schemas import ArticleCategory, CanonicalSource, ExtractedContent, SourceType
 
 
 def _make_content() -> ExtractedContent:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -35,7 +36,7 @@ def _extract_tweet_id(url: str) -> str | None:
 
 def _is_javascript_gate_text(text: str) -> bool:
     """Detect X's JavaScript/extension warning page text."""
-    normalized = text.casefold().replace("’", "'")
+    normalized = text.casefold().replace("'", "'")
     return (
         "javascript is disabled in this browser" in normalized
         or "please enable javascript or switch to a supported browser" in normalized
@@ -49,7 +50,7 @@ def _is_javascript_gate_text(text: str) -> bool:
     stop=stop_after_attempt(3),
     reraise=True,
 )
-async def _fetch_syndicated_tweet(tweet_id: str) -> dict | None:
+async def _fetch_syndicated_tweet(tweet_id: str) -> dict[str, Any] | None:
     """Fetch tweet data from Twitter's public syndication endpoint."""
     async with httpx.AsyncClient(
         headers={"User-Agent": _USER_AGENT},
@@ -72,7 +73,7 @@ def _as_text(value: object) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
-def _build_text_from_syndication(data: dict) -> tuple[str, str | None]:
+def _build_text_from_syndication(data: dict[str, Any]) -> tuple[str, str | None]:
     """Convert syndication JSON into extracted text and author handle."""
     body = _as_text(data.get("text"))
 
@@ -107,7 +108,9 @@ async def extract_tweet(source: CanonicalSource) -> ExtractedContent:
     warnings = [
         ExtractionWarning(
             code="experimental",
-            message="Twitter/X extraction is best-effort and may fail for protected or blocked pages",
+            message=(
+                "Twitter/X extraction is best-effort and may fail for protected or blocked pages"
+            ),
         ),
     ]
 
@@ -162,9 +165,12 @@ async def extract_tweet(source: CanonicalSource) -> ExtractedContent:
                 message="X returned a JavaScript-required page; tweet text could not be extracted",
             )
         )
+        fallback_title = (
+            tweet_id or source.canonical_url.split("/")[-1] if "/" in source.canonical_url else "Tweet"
+        )
         return ExtractedContent(
             source=source,
-            title=tweet_id or (source.canonical_url.split("/")[-1] if "/" in source.canonical_url else "Tweet"),
+            title=fallback_title,
             text="",
             site_name="Twitter/X",
             word_count=0,
@@ -172,11 +178,13 @@ async def extract_tweet(source: CanonicalSource) -> ExtractedContent:
             warnings=warnings,
         )
 
-    title = tweet_id or (source.canonical_url.split("/")[-1] if "/" in source.canonical_url else "Tweet")
+    title = tweet_id or source.canonical_url.split("/")[-1] if "/" in source.canonical_url else "Tweet"
     word_count = len(text.split()) if text else 0
 
     if not text:
-        warnings.append(ExtractionWarning(code="empty_content", message="No text could be extracted"))
+        warnings.append(
+            ExtractionWarning(code="empty_content", message="No text could be extracted")
+        )
 
     log.info("tweet_extraction_complete", word_count=word_count, quality=0.5)
 

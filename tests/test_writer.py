@@ -1,6 +1,5 @@
 """Tests for vault writer."""
 
-from pathlib import Path
 
 from vaultmind.core.writer import generate_filename, resolve_folder, slugify, write_note
 from vaultmind.schemas import (

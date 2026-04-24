@@ -11,7 +11,7 @@ from rich.table import Table
 from vaultmind.ai.knowledge import ReflectionReport, generate_reflection
 from vaultmind.ai.providers import get_provider
 from vaultmind.config import load_config
-from vaultmind.core.vault_index import filter_notes_by_days, scan_vault_notes
+from vaultmind.core.vault_index import VaultNoteRecord, filter_notes_by_days, scan_vault_notes
 from vaultmind.utils.display import console, print_warning
 from vaultmind.utils.logging import setup_logging
 
@@ -35,7 +35,7 @@ def reflect(days: int = 7, limit: int = 20, verbose: bool = False) -> None:
     render_reflection(report, supporting_notes=selected)
 
 
-def render_reflection(report: ReflectionReport, *, supporting_notes: list) -> None:
+def render_reflection(report: ReflectionReport, *, supporting_notes: list[VaultNoteRecord]) -> None:
     """Render reflection output with rich panels/tables."""
     console.print(
         Panel(

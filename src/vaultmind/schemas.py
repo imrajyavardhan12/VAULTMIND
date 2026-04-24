@@ -5,13 +5,13 @@ Pipeline flow: URL -> CanonicalSource -> ExtractedContent -> AIEnrichment -> Ren
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     ARTICLE = "article"
     REDDIT = "reddit"
     GITHUB = "github"
@@ -20,14 +20,14 @@ class SourceType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class NoteStatus(str, Enum):
+class NoteStatus(StrEnum):
     PROCESSED = "processed"
     PARTIAL = "partial"
     REVIEW = "review"
     ARCHIVED = "archived"
 
 
-class ArticleCategory(str, Enum):
+class ArticleCategory(StrEnum):
     AI = "AI"
     TECH = "Tech"
     PHILOSOPHY = "Philosophy"
@@ -140,7 +140,7 @@ class NoteFrontmatter(BaseModel):
     canonical_url: str
     type: SourceType
     author: str | None = None
-    saved: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    saved: datetime = Field(default_factory=lambda: datetime.now(UTC))
     tags: list[str] = Field(default_factory=list)
     rating: int = Field(ge=1, le=10, default=5)
     read_time_minutes: int = 0
@@ -165,3 +165,48 @@ class RenderedNote(BaseModel):
     body: str
     filename: str
     folder_path: str
+
+
+# ---- Manifest models (for vm compile) ----
+
+
+class ManifestSource(BaseModel):
+    """A source note tracked in the manifest."""
+
+    content_hash: str
+    saved_at: datetime
+    compiled_at: datetime | None = None
+    wiki_articles: list[str] = Field(default_factory=list)
+
+
+class ManifestWikiEntry(BaseModel):
+    """A wiki article tracked in the manifest."""
+
+    last_updated: datetime
+    source_urls: list[str] = Field(default_factory=list)
+    content_hash: str = ""
+
+
+class Manifest(BaseModel):
+    """Source of truth for the compile loop — tracks what has been compiled."""
+
+    version: int = 1
+    last_compiled: datetime | None = None
+    sources: dict[str, ManifestSource] = Field(default_factory=dict)
+    wiki_articles: dict[str, ManifestWikiEntry] = Field(default_factory=dict)
+
+
+class ConceptStatus(StrEnum):
+    NEW = "new"
+    EXISTING = "existing"
+    MERGE = "merge"
+
+
+class WikiConceptEntry(BaseModel):
+    """A concept extracted during concept triage."""
+
+    name: str
+    status: ConceptStatus
+    description: str = ""
+    source_urls: list[str] = Field(default_factory=list)
+    merge_target: str | None = None

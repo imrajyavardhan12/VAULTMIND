@@ -1,6 +1,6 @@
 """Tests for data models."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from vaultmind.schemas import (
     AIEnrichment,
@@ -9,7 +9,6 @@ from vaultmind.schemas import (
     ExtractedContent,
     NoteFrontmatter,
     NoteStatus,
-    RenderedNote,
     SourceType,
 )
 
@@ -86,9 +85,7 @@ def test_extraction_warning():
 
 
 def test_extracted_content_with_metadata():
-    from vaultmind.schemas import (
-        CanonicalSource, ExtractedContent, RedditMetadata, SourceType
-    )
+    from vaultmind.schemas import CanonicalSource, RedditMetadata, SourceType
     content = ExtractedContent(
         source=CanonicalSource(
             original_url="https://reddit.com/r/test/comments/abc/title/",

@@ -4,6 +4,10 @@ src = ["src"]
 
 [lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "B008",  # typer.Option() in function defaults is intentional
+    "E501",  # ai/prompts.py contains long prompt strings (inherent to content)
+]
 
 [format]
 quote-style = "double"

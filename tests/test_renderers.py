@@ -8,9 +8,9 @@ from vaultmind.schemas import (
     ExtractedContent,
     Flashcard,
     GitHubRepoMetadata,
-    RelatedNoteMatch,
     RedditComment,
     RedditMetadata,
+    RelatedNoteMatch,
     SourceType,
 )
 

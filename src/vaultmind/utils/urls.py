@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
+from vaultmind.schemas import SourceType
 
 TRACKING_PARAMS = {
     "utm_source",
@@ -58,7 +59,7 @@ def canonicalize_url(url: str) -> str:
     return canonical
 
 
-def detect_source_type(url: str) -> str:
+def detect_source_type(url: str) -> SourceType:
     """Detect the source type from a URL."""
     from vaultmind.schemas import SourceType
 
