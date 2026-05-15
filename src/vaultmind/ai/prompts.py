@@ -286,6 +286,31 @@ def build_reflection_prompt(*, period_label: str, notes_payload: str) -> str:
     return REFLECTION_PROMPT.format(period_label=period_label, notes_payload=notes_payload)
 
 
+# ---- vm ask prompts ----
+
+ASK_SYSTEM_PROMPT = """You are VaultMind's query synthesis engine. You answer questions by synthesizing information from the provided wiki articles and raw sources. You must ground every claim in the input materials. Never invent facts, URLs, or conclusions not supported by the sources."""
+
+ASK_USER_PROMPT = """Answer the question below using only the provided wiki articles and raw sources. If the materials do not contain enough information to fully answer the question, say so clearly and identify what additional knowledge would be needed.
+
+Return ONLY valid JSON in this exact shape:
+{{"answer": "your comprehensive answer in paragraph form", "gaps": ["what's still unknown or would need follow-up research"]}}
+
+Question: {question}
+
+Context:
+{context}
+"""
+
+ASK_SELF_ASSESS_PROMPT = """Given your answer and the question, identify knowledge gaps — areas where the provided sources do not fully address what is being asked. Return only the gaps.
+
+Return JSON:
+{{"gaps": ["gap description 1", "gap description 2"]}}
+
+Question: {question}
+Answer: {answer}
+"""
+
+
 # ---- vm compile prompts ----
 
 COMPILE_CONCEPT_TRIAGE_PROMPT = """You are a librarian organizing a research wiki.
