@@ -84,6 +84,7 @@ async def compile_sources(
     folders: FolderConfig,
     *,
     dry_run: bool = False,
+    existing_concepts: list[tuple[str, str]] | None = None,
 ) -> tuple[CompileResult, dict[str, list[str]]]:
     """Run the full compile pipeline on raw source documents.
 
@@ -110,10 +111,14 @@ async def compile_sources(
     # Stage 1: concept triage — uses RAW source content, not AI summaries
     log.info("compile_triage_start", count=len(sources))
     sources_payload = "\n\n---\n\n".join(format_raw_source_packet(s) for s in sources)
+    concepts_payload = _format_existing_concepts(existing_concepts or [])
 
     try:
         triage_response = await provider.complete(
-            COMPILE_CONCEPT_TRIAGE_PROMPT.format(new_sources=sources_payload),
+            COMPILE_CONCEPT_TRIAGE_PROMPT.format(
+                existing_concepts=concepts_payload,
+                new_sources=sources_payload,
+            ),
             system="You are a precise librarian. Return only valid JSON.",
         )
     except Exception as exc:
@@ -181,6 +186,13 @@ async def compile_sources(
                     slug_to_urls[target_slug].append(url)
 
     return result, slug_to_urls
+
+
+def _format_existing_concepts(existing_concepts: list[tuple[str, str]]) -> str:
+    """Format existing concept slugs for the triage prompt."""
+    if not existing_concepts:
+        return "No existing concept pages yet."
+    return "\n".join(f"- {slug}: {title}" for slug, title in sorted(existing_concepts))
 
 
 async def _create_article(

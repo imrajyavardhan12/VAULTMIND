@@ -29,6 +29,7 @@ from vaultmind.core.manifest import (
     write_manifest,
 )
 from vaultmind.core.raw_scanner import RawSourceRecord, scan_raw_sources
+from vaultmind.core.wiki_log import append_wiki_log
 from vaultmind.core.writer import write_markdown_page
 from vaultmind.schemas import Manifest
 from vaultmind.utils.display import print_info, print_success, print_warning
@@ -133,6 +134,7 @@ async def _run_compile_async(
         config.vault_path,
         config.folders,
         dry_run=dry_run,
+        existing_concepts=_existing_concept_summaries(config),
     )
 
     if not dry_run and (result.articles_created > 0 or result.articles_updated > 0):
@@ -174,6 +176,15 @@ async def _run_compile_async(
 
         update_compiled_at(manifest)
         write_manifest(config.vault_path, manifest)
+        append_wiki_log(
+            config,
+            event="compile",
+            detail=(
+                f"{result.articles_created} created, "
+                f"{result.articles_updated} updated, "
+                f"{result.sources_compiled} source(s)"
+            ),
+        )
 
     return result, slug_to_urls
 
@@ -200,6 +211,18 @@ def _extract_article_title(article_path: Path) -> str:
         return heading.group(1).strip()
 
     return article_path.stem.replace("-", " ").title()
+
+
+def _existing_concept_summaries(config: AppConfig) -> list[tuple[str, str]]:
+    """Return existing concept slugs and titles for compile triage."""
+    wiki_concepts_dir = config.vault_path / config.folders.wiki / config.folders.wiki_concepts
+    if not wiki_concepts_dir.exists():
+        return []
+
+    summaries: list[tuple[str, str]] = []
+    for article_path in wiki_concepts_dir.glob("*.md"):
+        summaries.append((article_path.stem, _extract_article_title(article_path)))
+    return summaries
 
 
 def _render_dry_run_summary(

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
+import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
-
-import pytest
 
 from vaultmind.ai.asker import (
     AskResult,
@@ -15,9 +13,9 @@ from vaultmind.ai.asker import (
     _extract_answer_text,
     _extract_gaps_from_assessment,
     _follow_up_gap,
-    _initial_search,
     _render_answer_markdown,
     _slug_from_question,
+    ask_question,
 )
 from vaultmind.core.vault_index import VaultNoteRecord
 
@@ -181,7 +179,7 @@ class TestFollowUpGap:
         note_file.write_text("---\ntitle: Attention\n---\n\n# Attention\n\nContent about attention mechanisms.")
 
         ctx = GatheredContext(wiki_notes=[], raw_sources=[])
-        _follow_up_gap("attention", ctx, vault, "🗺️ Wiki", "🧠 Concepts")
+        _follow_up_gap("attention", ctx, vault, "🗺️ Wiki", "🧠 Concepts", "📥 Raw")
         assert len(ctx.wiki_notes) == 1
         assert ctx.wiki_notes[0].title == "Attention"
 
@@ -197,7 +195,7 @@ class TestFollowUpGap:
         # Same title but different path (simulating an already-tracked note)
         existing = _wiki_note("Attention", "existing-attention")
         ctx = GatheredContext(wiki_notes=[existing], raw_sources=[])
-        _follow_up_gap("attention", ctx, vault, "🗺️ Wiki", "🧠 Concepts")
+        _follow_up_gap("attention", ctx, vault, "🗺️ Wiki", "🧠 Concepts", "📥 Raw")
         # Gap found a note with same title "Attention" — deduplication prevents adding a second
         titles = [n.title for n in ctx.wiki_notes]
         assert titles.count("Attention") == 1
@@ -216,3 +214,61 @@ class TestAskResult:
         assert result.slug == "test-slug"
         assert result.iterations == 2
         assert result.gaps == ["gap one"]
+
+
+def test_ask_preview_does_not_write_query_file(tmp_path: Path):
+    vault = tmp_path / "vault"
+    raw_dir = vault / "📥 Raw"
+    raw_dir.mkdir(parents=True)
+    (raw_dir / "rlhf.md").write_text("# RLHF\n\nRLHF uses human feedback.", encoding="utf-8")
+
+    provider = StubProvider(['{"answer": "RLHF uses human feedback.", "gaps": []}'])
+
+    result = asyncio.run(
+        ask_question(
+            question="What is RLHF?",
+            provider=provider,
+            vault_path=vault,
+            folders_wiki="🗺️ Wiki",
+            folders_wiki_concepts="🧠 Concepts",
+            folders_wiki_queries="📊 Queries",
+            folders_raw="📥 Raw",
+            depth="shallow",
+            file_answer=False,
+        )
+    )
+
+    assert result.answer == "RLHF uses human feedback."
+    assert not result.path.exists()
+    assert "RLHF uses human feedback" in provider.prompts[0]
+
+
+def test_ask_files_query_when_enabled(tmp_path: Path):
+    vault = tmp_path / "vault"
+    wiki_dir = vault / "🗺️ Wiki" / "🧠 Concepts"
+    wiki_dir.mkdir(parents=True)
+    (wiki_dir / "rlhf.md").write_text(
+        "---\ntitle: RLHF\nvaultmind: true\nkind: concept\n---\n\n# RLHF\n\nRLHF notes.",
+        encoding="utf-8",
+    )
+
+    provider = StubProvider(['{"answer": "RLHF notes answer.", "gaps": []}'])
+
+    result = asyncio.run(
+        ask_question(
+            question="What is RLHF?",
+            provider=provider,
+            vault_path=vault,
+            folders_wiki="🗺️ Wiki",
+            folders_wiki_concepts="🧠 Concepts",
+            folders_wiki_queries="📊 Queries",
+            folders_raw="📥 Raw",
+            depth="shallow",
+            file_answer=True,
+        )
+    )
+
+    assert result.path.exists()
+    text = result.path.read_text(encoding="utf-8")
+    assert "kind: query" in text
+    assert "RLHF notes answer." in text

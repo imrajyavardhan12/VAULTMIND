@@ -317,6 +317,9 @@ COMPILE_CONCEPT_TRIAGE_PROMPT = """You are a librarian organizing a research wik
 
 Given the following RAW source documents (these are the original texts, NOT AI summaries), identify the key concepts they introduce or substantially advance.
 
+Existing wiki concepts:
+{existing_concepts}
+
 For each concept:
 - Determine if it is [NEW], [EXISTING: concept-slug], or [MERGE: concept-slug]
 - Provide a one-line description of the concept
@@ -328,6 +331,7 @@ Respond ONLY with valid JSON in this exact shape:
 
 Rules:
 - Slugs must be lowercase, hyphenated (e.g. "attention-mechanisms")
+- Prefer EXISTING when a current concept already covers the source material
 - Do not invent URLs — only use the source URLs provided below
 - If multiple sources cover the same concept, mark them MERGE with the most representative slug
 - Be conservative: only create a new concept if it genuinely warrants its own article

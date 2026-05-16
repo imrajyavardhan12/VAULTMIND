@@ -121,6 +121,7 @@ def _initial_search(
     vault_path: Path,
     folders_wiki: str,
     folders_wiki_concepts: str,
+    folders_raw: str,
 ) -> GatheredContext:
     """Perform initial search across wiki concepts and raw sources."""
     wiki_notes: list[VaultNoteRecord] = []
@@ -160,7 +161,8 @@ def _initial_search(
         wiki_notes.sort(key=lambda n: scored.get(n.relative_path, 0), reverse=True)
         wiki_notes = wiki_notes[:MAX_CONTEXT_NOTES]
 
-    return GatheredContext(wiki_notes=wiki_notes, raw_sources=[])
+    raw_sources = [] if wiki_notes else _search_raw_sources(question, vault_path, folders_raw)
+    return GatheredContext(wiki_notes=wiki_notes, raw_sources=raw_sources)
 
 
 def _follow_up_gap(
@@ -169,6 +171,7 @@ def _follow_up_gap(
     vault_path: Path,
     folders_wiki: str,
     folders_wiki_concepts: str,
+    folders_raw: str,
 ) -> None:
     """Search for content related to a gap and add to gathered context."""
     wiki_concepts_dir = vault_path / folders_wiki / folders_wiki_concepts
@@ -205,6 +208,66 @@ def _follow_up_gap(
         )
         gathered.wiki_notes.append(note)
 
+    existing_raw = {source.relative_path for source in gathered.raw_sources}
+    for source in _search_raw_sources(gap, vault_path, folders_raw):
+        if source.relative_path not in existing_raw and len(gathered.raw_sources) < MAX_CONTEXT_SOURCES:
+            gathered.raw_sources.append(source)
+            existing_raw.add(source.relative_path)
+
+
+def _search_raw_sources(query: str, vault_path: Path, folders_raw: str) -> list[RawSourceRecord]:
+    """Search Raw markdown sources with a small keyword scorer."""
+    raw_dir = vault_path / folders_raw
+    if not raw_dir.exists():
+        legacy = vault_path / "Clippings"
+        raw_dir = legacy if legacy.exists() else raw_dir
+    if not raw_dir.exists():
+        return []
+
+    query_tokens = _tokenize_query(query)
+    scored: list[tuple[int, RawSourceRecord]] = []
+    for path in raw_dir.rglob("*.md"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        frontmatter, body = _split_frontmatter(text)
+        title = _extract_markdown_title(body) or path.stem
+        source_url = _frontmatter_value(frontmatter, "source") or _frontmatter_value(
+            frontmatter, "canonical_url"
+        )
+        raw_tags = _parse_tags(frontmatter.get("tags"))
+        haystack = f"{title}\n{' '.join(raw_tags)}\n{body}".lower()
+        score = sum(1 for token in query_tokens if token in haystack)
+        if query.lower().strip() and query.lower().strip() in haystack:
+            score += 4
+        if score <= 0:
+            continue
+
+        try:
+            relative_path = path.relative_to(vault_path).with_suffix("").as_posix()
+        except ValueError:
+            relative_path = path.name
+
+        scored.append(
+            (
+                score,
+                RawSourceRecord(
+                    path=path,
+                    relative_path=relative_path,
+                    title=title,
+                    source_url=source_url,
+                    body=body.strip(),
+                    content_hash="",
+                    raw_tags=raw_tags,
+                ),
+            )
+        )
+
+    scored.sort(key=lambda item: (-item[0], item[1].title.lower()))
+    return [record for _, record in scored[:MAX_CONTEXT_SOURCES]]
+
 
 # ---- File I/O helpers ----
 
@@ -223,6 +286,35 @@ def _read_frontmatter(file_path: Path) -> dict[str, object]:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
+def _split_frontmatter(text: str) -> tuple[dict[str, object], str]:
+    """Split markdown frontmatter and body."""
+    if not text.startswith("---"):
+        return {}, text
+    end = text.find("---", 3)
+    if end == -1:
+        return {}, text
+    fm_text = text[3:end]
+    body = text[end + 3 :]
+    try:
+        import yaml
+
+        data = yaml.safe_load(fm_text)
+    except Exception:
+        data = {}
+    return data if isinstance(data, dict) else {}, body
+
+
+def _extract_markdown_title(body: str) -> str | None:
+    """Extract the first H1 title from markdown."""
+    match = re.search(r"^#\s+(.+?)$", body, flags=re.MULTILINE)
+    return match.group(1).strip() if match else None
+
+
+def _frontmatter_value(frontmatter: dict[str, object], key: str) -> str | None:
+    value = frontmatter.get(key)
+    return value if isinstance(value, str) and value.strip() else None
 
 
 def _strip_frontmatter(text: str) -> str:
@@ -253,6 +345,11 @@ def _parse_tags(value: object) -> list[str]:
     if isinstance(value, str):
         return [t.strip().lower() for t in value.split(",") if t.strip()]
     return []
+
+
+def _tokenize_query(query: str) -> set[str]:
+    """Tokenize a Raw search query."""
+    return {token for token in re.findall(r"[a-z0-9]+", query.lower()) if len(token) >= 2}
 
 
 def _parse_datetime(value: object) -> datetime | None:
@@ -324,8 +421,10 @@ async def ask_question(
     folders_wiki: str,
     folders_wiki_concepts: str,
     folders_wiki_queries: str,
+    folders_raw: str,
     *,
     depth: str = "deep",
+    file_answer: bool = True,
 ) -> AskResult:
     """Run the ask loop: question → synthesize → self-assess gaps → follow-up → file.
 
@@ -334,13 +433,15 @@ async def ask_question(
     """
     max_iters = 1 if depth == "shallow" else MAX_ITERATIONS
 
-    gathered = _initial_search(question, vault_path, folders_wiki, folders_wiki_concepts)
+    gathered = _initial_search(question, vault_path, folders_wiki, folders_wiki_concepts, folders_raw)
     log.info("ask_initial_search", wiki=len(gathered.wiki_notes), raw=len(gathered.raw_sources))
 
     note_paths_used: set[str] = set()
     source_urls_used: set[str] = set()
     for note in gathered.wiki_notes:
         note_paths_used.add(note.relative_path)
+    for source in gathered.raw_sources:
+        source_urls_used.add(source.source_url or source.relative_path)
 
     context = _build_context_text(question, gathered)
     user_prompt = ASK_USER_PROMPT.format(question=question, context=context)
@@ -367,11 +468,14 @@ async def ask_question(
         if gaps:
             log.info("ask_follow_up", iteration=iteration, gaps=gaps)
             for gap in gaps:
-                _follow_up_gap(gap, gathered, vault_path, folders_wiki, folders_wiki_concepts)
+                _follow_up_gap(gap, gathered, vault_path, folders_wiki, folders_wiki_concepts, folders_raw)
 
             note_paths_used.clear()
             for note in gathered.wiki_notes:
                 note_paths_used.add(note.relative_path)
+            source_urls_used.clear()
+            for source in gathered.raw_sources:
+                source_urls_used.add(source.source_url or source.relative_path)
 
             gathered.wiki_notes = gathered.wiki_notes[:MAX_CONTEXT_NOTES]
             context = _build_context_text(question, gathered)
@@ -403,10 +507,20 @@ async def ask_question(
     )
 
     queries_dir = vault_path / folders_wiki / folders_wiki_queries
-    queries_dir.mkdir(parents=True, exist_ok=True)
     path = queries_dir / f"{slug}.md"
 
-    write_markdown_page(path, body=body)
+    if file_answer:
+        queries_dir.mkdir(parents=True, exist_ok=True)
+        write_markdown_page(
+            path,
+            body=body,
+            frontmatter={
+                "title": question,
+                "vaultmind": True,
+                "kind": "query",
+                "created": now.isoformat(),
+            },
+        )
 
     log.info("ask_complete", slug=slug, path=str(path), iterations=iteration)
 

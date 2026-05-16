@@ -9,6 +9,7 @@ import typer
 from vaultmind.ai.asker import ask_question
 from vaultmind.ai.providers import get_provider
 from vaultmind.config import load_config
+from vaultmind.core.wiki_log import append_wiki_log
 from vaultmind.utils.display import console, print_info
 from vaultmind.utils.logging import setup_logging
 
@@ -43,13 +44,16 @@ def ask(
             folders_wiki=config.folders.wiki,
             folders_wiki_concepts=config.folders.wiki_concepts,
             folders_wiki_queries=config.folders.wiki_queries,
+            folders_raw=config.folders.raw,
             depth=depth,
+            file_answer=not preview,
         )
     )
 
     if preview:
         console.print(result.answer)
     else:
+        append_wiki_log(config, event="ask", detail=question)
         print_info(f"Answer filed to:\n{result.path}")
         console.print(result.answer)
 

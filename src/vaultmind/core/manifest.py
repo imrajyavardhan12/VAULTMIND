@@ -64,11 +64,14 @@ def upsert_source(
     existing = manifest.sources.get(url)
 
     if existing is not None:
+        merged_articles = existing.wiki_articles
+        if wiki_articles is not None:
+            merged_articles = list(dict.fromkeys([*existing.wiki_articles, *wiki_articles]))
         manifest.sources[url] = ManifestSource(
             content_hash=content_hash,
             saved_at=existing.saved_at,
             compiled_at=now,
-            wiki_articles=wiki_articles if wiki_articles is not None else existing.wiki_articles,
+            wiki_articles=merged_articles,
         )
     else:
         manifest.sources[url] = ManifestSource(
