@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "last_compiled": "2026-05-15T10:00:00+00:00",
+  "sources": {
+    "https://lena-voita.github.io/posts/annotated_transformers/attention.html": {
+      "content_hash": "228d31f8",
+      "saved_at": "2026-05-10T14:23:00+00:00",
+      "compiled_at": "2026-05-15T10:00:00+00:00",
+      "wiki_articles": ["attention-mechanisms"]
+    }
+  },
+  "wiki_articles": {
+    "attention-mechanisms": {
+      "last_updated": "2026-05-15T10:00:00+00:00",
+      "source_urls": [
+        "https://lena-voita.github.io/posts/annotated_transformers/attention.html"
+      ],
+      "content_hash": "1546d41d"
+    }
+  }
+}
