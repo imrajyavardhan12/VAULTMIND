@@ -7,6 +7,7 @@ import typer
 
 def register_commands(app: typer.Typer) -> None:
     """Register all commands on the main Typer app."""
+    from vaultmind.commands.ask import ask
     from vaultmind.commands.brief import brief
     from vaultmind.commands.compile import compile
     from vaultmind.commands.digest import digest
@@ -16,6 +17,7 @@ def register_commands(app: typer.Typer) -> None:
     from vaultmind.commands.reflect import reflect
     from vaultmind.commands.stats import stats
 
+    app.command("ask")(ask)
     app.command("init")(init)
     app.command("brief")(brief)
     app.command("compile")(compile)

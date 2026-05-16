@@ -1,228 +1,336 @@
-<p align="center">
-  <img src="assets/icons8-mind-100.png" alt="VaultMind" width="80">
-</p>
+# VaultMind
 
-<h1 align="center">VaultMind</h1>
+> Clip anything into Obsidian. Run `vm compile`. Ask your living wiki.
 
-<p align="center">
-  <em>Your personal AI-powered second brain. Feed it anything. Find everything.</em>
-</p>
+VaultMind is a local-first CLI for building a personal LLM-maintained wiki inside an Obsidian vault.
 
-A CLI tool that sits between the internet and your [Obsidian](https://obsidian.md) vault. Give it a URL — an article, GitHub repo, Reddit post, or tweet — and it extracts the content, processes it through AI, and writes a beautifully structured, interlinked Markdown note into your vault.
+It is inspired by Andrej Karpathy's LLM Wiki pattern:
 
-<p align="center">
-  <img src="demo.gif" alt="VaultMind Demo" width="800">
-</p>
+https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f
 
+## Product Thesis
+
+VaultMind is not a web clipper, bookmark manager, or generic RAG chatbot.
+
+Obsidian Web Clipper is already good at capturing web pages, images, assets, and source material. VaultMind should not compete with that. VaultMind is the intelligence layer that reads your clipped source material and maintains a durable wiki from it.
+
+The core idea:
+
+> Knowledge should be compiled once, maintained continuously, and reused repeatedly.
+
+Most AI document tools retrieve chunks from raw files every time you ask a question. VaultMind instead builds a persistent markdown wiki. Every source added, every answer filed, and every maintenance pass should make the next interaction smarter.
+
+## What VaultMind Does
+
+VaultMind has one primary workflow:
+
+```text
+Obsidian Web Clipper -> 📥 Raw/ -> vm compile -> 🗺️ Wiki/
+```
+
+You save original source documents into Obsidian. VaultMind reads those sources, identifies concepts, creates and updates wiki pages, maintains an index, records what changed, and lets you ask questions against the compiled knowledge base.
+
+In simple terms:
+
+- Obsidian captures the material.
+- VaultMind organizes and synthesizes it.
+- The wiki compounds over time.
+
+## The Three Layers
+
+### 1. Raw Sources
+
+Raw sources are original documents saved as markdown.
+
+Examples:
+
+- clipped articles,
+- papers converted to markdown,
+- transcripts,
+- meeting notes,
+- manually pasted source documents.
+
+Rules:
+
+- Raw sources are the ground truth.
+- VaultMind reads them.
+- VaultMind never rewrites them.
+- The user or Obsidian Web Clipper owns them.
+
+Default folder:
+
+```text
+{vault}/📥 Raw/
+```
+
+### 2. Wiki
+
+The wiki is the LLM-authored layer.
+
+It contains concept pages, query answers, weekly summaries, lint reports, an index, and a log. VaultMind owns this layer. The user reviews it.
+
+Default folder:
+
+```text
+{vault}/🗺️ Wiki/
+```
+
+### 3. Schema
+
+The schema is the contract that tells the LLM how to maintain the wiki.
+
+It should live in the vault root as:
+
+```text
+VAULTMIND.md
+```
+
+It defines directory ownership, page formats, citation rules, wikilink style, review policy, and what VaultMind may edit.
+
+## Core Workflows
+
+### Ingest
+
+Ingest means adding source material to `📥 Raw/`.
+
+Primary path:
+
+```text
+Obsidian Web Clipper -> 📥 Raw/
+```
+
+VaultMind does not need to own capture. It can keep helper commands, but the product center is source markdown already in the vault.
+
+### Compile
+
+Compile is the main product loop.
+
+```bash
+vm compile
+```
+
+It should:
+
+1. Scan `📥 Raw/`.
+2. Detect new or changed source files.
+3. Read the current wiki index and known concept pages.
+4. Ask the LLM which concepts should be created or updated.
+5. Create or update pages in `🗺️ Wiki/🧠 Concepts/`.
+6. Update `🗺️ Wiki/📇 Index.md`.
+7. Append to `🗺️ Wiki/📋 Log.md`.
+8. Update `vault.manifest.json`.
+
+Compile should be conservative. Updating an existing concept page is usually better than creating a duplicate page.
+
+### Ask
+
+Ask is the second compounding loop.
+
+```bash
+vm ask "What is the difference between RLHF and DPO?"
+```
+
+It should:
+
+1. Search the compiled wiki first.
+2. Search Raw only when the wiki is insufficient.
+3. Produce a grounded answer.
+4. In normal mode, file the answer to `🗺️ Wiki/📊 Queries/`.
+5. In preview mode, print without writing.
+
+### Lint
+
+Lint is the health-maintenance loop.
+
+```bash
+vm lint
+```
+
+It should write a reviewable report to:
+
+```text
+🗺️ Wiki/📋 Inbox/lint-YYYY-MM-DD.md
+```
+
+Checks should include orphan raw sources, concept duplicates, broken wikilinks, stale index entries, wiki pages with no sources, and raw material that has not been compiled.
+
+### Save
+
+`vm save <url>` is a secondary helper workflow.
+
+It can still create structured personal notes for URLs, GitHub repos, Reddit posts, and threads, but it is not the main architecture. The preferred capture path is Obsidian Web Clipper into `📥 Raw/`.
+
+## Vault Layout
+
+Canonical layout:
+
+```text
+{vault}/
+├── 📥 Raw/
+│   └── assets/
+├── 🗺️ Wiki/
+│   ├── 🧠 Concepts/
+│   ├── 📊 Queries/
+│   ├── 📋 Inbox/
+│   ├── 📅 Weekly/
+│   ├── 📇 Index.md
+│   └── 📋 Log.md
+├── 📚 Sources/
+├── 🛠️ Tools/
+├── 🐦 Threads/
+├── 💬 Discussions/
+├── 💡 Ideas/
+├── ⚙️ Meta/
+├── VAULTMIND.md
+└── vault.manifest.json
+```
+
+Ownership:
+
+- `📥 Raw/`: human or Obsidian Web Clipper owned; VaultMind read-only.
+- `🗺️ Wiki/`: VaultMind owned; user reviews.
+- `📚 Sources/`, `🛠️ Tools/`, `🐦 Threads/`, `💬 Discussions/`: secondary `vm save` notes.
+- `VAULTMIND.md`: human-owned schema, optionally scaffolded by VaultMind.
+- `vault.manifest.json`: VaultMind owned.
+
+## Page Contracts
+
+Concept pages live in:
+
+```text
+🗺️ Wiki/🧠 Concepts/{slug}.md
+```
+
+Recommended shape:
+
+```markdown
 ---
+title: "Human Title"
+vaultmind: true
+kind: concept
+sources:
+  - https://example.com/source
+---
+
+# Human Title
+
+## Overview
+
+## Key Ideas
+
+## Connections
+
+## Open Questions
+
+## Sources
+```
+
+Query pages live in:
+
+```text
+🗺️ Wiki/📊 Queries/{question-slug}.md
+```
+
+Recommended shape:
+
+```markdown
+---
+title: "Question?"
+vaultmind: true
+kind: query
+created: 2026-05-16T00:00:00+00:00
+---
+
+# Question?
+
+## Answer
+
+## Supporting Wiki Pages
+
+## Supporting Raw Sources
+
+## Follow-up Questions
+```
+
+## CLI
+
+Core commands:
+
+```bash
+vm init
+vm compile
+vm ask
+vm lint
+```
+
+Supporting commands:
+
+```bash
+vm find
+vm brief
+vm reflect
+vm digest
+vm stats
+```
+
+Secondary helper commands:
+
+```bash
+vm save <url>
+vm flashcard
+```
 
 ## Installation
 
 ```bash
-# Recommended (isolated install)
-brew install pipx
 pipx install vaultmind
-
-# Or with pip (requires Python ≥ 3.11)
-pip install vaultmind
 ```
 
-## Quick Start
+Or from this repository:
 
 ```bash
-# Interactive setup — vault path, AI provider, API key
-vm init
-
-# Save your first note
-vm save https://example.com/article
+uv sync
+uv run vm init
 ```
-
-## Commands
-
-### `vm init`
-
-Interactive setup wizard. Creates `~/.config/vaultmind/config.yaml` and `.env`, asks for your vault path, AI provider, and API key, and scaffolds the vault folder structure.
-
-```bash
-vm init
-```
-
-### `vm save <url>`
-
-The core command. Processes any supported URL through the full pipeline:
-
-1. **Detects** the source type (article, Reddit, GitHub, tweet)
-2. **Extracts** clean content (strips ads, nav, tracking params)
-3. **Enriches** via AI — summary, key ideas, quotes, counterarguments, tags, rating
-4. **Generates** flashcards and finds related notes already in your vault
-5. **Writes** an atomic Markdown file with YAML frontmatter to the correct vault folder
-
-```bash
-vm save https://github.com/astral-sh/uv
-vm save https://www.reddit.com/r/MachineLearning/comments/abc123/some_post
-vm save https://example.com/blog/great-article
-
-# Options
-vm save <url> --tag cli --tag python   # Add extra tags
-vm save <url> --folder "📚 Sources/AI" # Override folder routing
-vm save <url> --force                  # Re-process even if already saved
-vm save <url> --no-flash               # Skip flashcard generation
-vm save <url> --verbose                # Debug logging to stderr
-```
-
-**Duplicate detection:** If a URL was already saved, VaultMind skips it (use `--force` to re-process). Passing `--tag` on a duplicate merges the new tags into the existing note.
-
-### `vm compile`
-
-Compile immutable raw markdown sources into LLM-authored wiki concept pages. This is the Karpathy-style wiki loop: Obsidian Web Clipper saves original articles into `📥 Raw/`, then VaultMind synthesizes them into `🗺️ Wiki/🧠 Concepts/` and tracks progress in `vault.manifest.json`.
-
-```bash
-vm compile             # Incremental: only new/changed raw sources
-vm compile --full      # Recompile every raw source
-vm compile --dry-run   # Preview source and concept targets without writing
-```
-
-VaultMind also falls back to an existing `Clippings/` folder when `📥 Raw/` is not present, so older Web Clipper setups continue to work.
-
-### `vm find [query]`
-
-Search across all saved notes by keyword or fuzzy match. Without a query, shows recent notes.
-
-```bash
-vm find "transformer architecture"
-vm find                              # Show recent notes
-vm find "rust" --limit 10
-```
-
-Scoring weights: exact title match (60), tag match (40), body match (20), plus Jaccard similarity and fuzzy title matching.
-
-### `vm brief`
-
-Generate a weekly digest summarizing what you've saved recently. Uses the **fast** AI tier.
-
-```bash
-vm brief              # Last 7 days
-vm brief --days 14    # Last 14 days
-vm brief --limit 30   # Include up to 30 notes
-```
-
-Output includes themes, highlights, gaps in your reading, and suggested next steps.
-
-### `vm digest <topic>`
-
-Deep synthesis on a specific topic across your entire vault. Uses the **deep** AI tier. Automatically generates a Map of Content (MOC) file when 5+ notes match.
-
-```bash
-vm digest "AI safety"
-vm digest "rust" --no-moc    # Skip MOC generation
-vm digest "design" --limit 20
-```
-
-### `vm reflect`
-
-A weekly thinking mirror — surfaces patterns, belief shifts, tensions, and blind spots in your saves. Uses the **deep** AI tier.
-
-```bash
-vm reflect              # Last 7 days
-vm reflect --days 30    # Last 30 days
-```
-
-### `vm flashcard`
-
-Quiz yourself on flashcards auto-generated from your saved notes. No AI call needed — cards are parsed from the `## 🃏 Flashcards` section already embedded in each note.
-
-```bash
-vm flashcard                    # All cards, shuffled
-vm flashcard --topic "AI"       # Filter by topic
-vm flashcard --limit 10         # Cap at 10 cards
-```
-
-Interactive controls: `space` flip · `n` next · `p` previous · `k` known · `u` unsure · `q` quit
-
-### `vm stats`
-
-Vault health dashboard — total notes, breakdown by type and status, top tags, average rating, flashcard coverage, and MOC candidates.
-
-```bash
-vm stats
-```
-
-### `vm version`
-
-Show the current VaultMind version.
-
-## Supported Sources
-
-| Source | Extractor | What You Get |
-|---|---|---|
-| **Articles / Blogs** | [trafilatura](https://github.com/adbar/trafilatura) | Clean text, author, publication, reading time |
-| **GitHub Repos** | GitHub REST API | Tool Card format — description, stars, language, README summary |
-| **Reddit Posts** | Reddit JSON API | Post + top 5 comments, discussion summary, subreddit as tag |
-| **Twitter / X** | Syndication API + trafilatura fallback | Best-effort extraction (experimental, marked as partial on failure) |
 
 ## Configuration
 
-`vm init` creates all config files automatically. For advanced users, they live at:
+`vm init` creates:
 
-| File | Purpose |
-|---|---|
-| `~/.config/vaultmind/config.yaml` | Vault path, folder names, AI provider/model settings |
-| `~/.config/vaultmind/.env` | API keys (permissions: 600) |
-
-You can also place `config.yaml` and `.env` in your current working directory — VaultMind checks there first.
-
-The canonical compile folders are `📥 Raw/` for immutable clipped sources and `🗺️ Wiki/` for generated concept pages. `vm init` creates both, along with the personal-note folders used by `vm save`.
-
-To reconfigure, run `vm init` again.
-
-## Project Structure
-
-```
-src/vaultmind/
-├── main.py              # CLI entry point (typer)
-├── config.py            # Pydantic settings (config.yaml + .env)
-├── schemas.py           # Pipeline data models
-├── core/
-│   ├── router.py        # URL detection & canonicalization
-│   ├── extractors.py    # Dispatcher to source-specific extractors
-│   ├── scraper.py       # Article extraction (trafilatura)
-│   ├── reddit.py        # Reddit JSON API client
-│   ├── github.py        # GitHub REST API client
-│   ├── twitter.py       # Twitter syndication + fallback
-│   ├── raw_scanner.py   # Raw markdown scanner for vm compile
-│   ├── manifest.py      # vault.manifest.json helpers
-│   ├── renderers.py     # Source-specific Markdown body renderers
-│   ├── writer.py        # Atomic vault file writer
-│   ├── linker.py        # Related note finder (Jaccard similarity)
-│   ├── vault_index.py   # Vault scanner for Phase 4 commands
-│   ├── search.py        # Keyword & fuzzy search engine
-│   ├── flashcards.py    # Flashcard parser from note bodies
-│   └── moc.py           # Map of Content generator
-├── ai/
-│   ├── pipeline.py      # Content → AIEnrichment flow
-│   ├── compiler.py      # Raw sources → wiki concept articles
-│   ├── prompts.py       # All prompt templates (provider-agnostic)
-│   ├── knowledge.py     # Brief / Digest / Reflect synthesis
-│   ├── json_utils.py    # JSON response cleanup
-│   └── providers/       # Anthropic, OpenAI, Ollama
-├── commands/            # One file per CLI command
-└── utils/               # Display, hashing, URLs, tags, logging
+```text
+~/.config/vaultmind/config.yaml
+~/.config/vaultmind/.env
 ```
 
-## Tech Stack
+The config stores vault paths, folder names, and AI provider preferences. The `.env` stores API keys.
 
-- **CLI:** [Typer](https://typer.tiangolo.com) + [Rich](https://rich.readthedocs.io)
-- **AI:** Anthropic SDK, OpenAI SDK (provider-agnostic via Protocol)
-- **Extraction:** [trafilatura](https://github.com/adbar/trafilatura), [httpx](https://www.python-httpx.org)
-- **Data:** [Pydantic](https://docs.pydantic.dev) models, YAML frontmatter
-- **Resilience:** [tenacity](https://tenacity.readthedocs.io) retries with exponential backoff
-- **Logging:** [structlog](https://www.structlog.org) (JSON to file, human-readable in verbose mode)
-- **Package manager:** [uv](https://github.com/astral-sh/uv)
+## Architecture Principles
 
-## Requirements
+- Prefer markdown files over hidden state.
+- Prefer a readable JSON manifest over a database.
+- Keep Raw immutable.
+- Keep Wiki reviewable.
+- Make preview modes truly no-write.
+- Make changes inspectable with git diffs.
+- Do not add vector databases, LangChain, SQLite, or background daemons until the core loop proves it needs them.
 
-- Python ≥ 3.11
-- An Anthropic or OpenAI API key
-- An Obsidian vault directory
+## Current Engineering Priorities
 
-See the [PyPI page](https://pypi.org/project/vaultmind/) for the latest release.
+1. Make `vm compile` robust: existing concept awareness, multi-concept manifest mappings, index rebuild, log writes.
+2. Make `vm ask` robust: wiki-first search, Raw fallback, true preview mode, filed query metadata.
+3. Add `vm lint`: reviewable reports for wiki health.
+4. Move brief and reflect output into Wiki with preview support.
+5. Keep `vm save` useful but secondary.
+
+## Success Criteria
+
+VaultMind is working when:
+
+- adding 20 raw sources produces a coherent wiki instead of 20 isolated summaries,
+- concept pages improve rather than duplicate as more sources arrive,
+- `vm ask` mostly answers from the wiki and only uses Raw when needed,
+- useful answers become durable query pages,
+- the index and log make the system navigable,
+- lint catches wiki decay before the user loses trust,
+- the vault feels smarter, not merely larger.
+

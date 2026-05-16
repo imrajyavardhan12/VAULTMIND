@@ -78,8 +78,9 @@ def test_run_compile_async_upserts_manifest_with_relative_path_key(monkeypatch, 
         folders,
         *,
         dry_run=False,
+        existing_concepts=None,
     ):
-        del manifest_arg, provider, vault_path, folders, dry_run
+        del manifest_arg, provider, vault_path, folders, dry_run, existing_concepts
         return (
             compile_cmd.CompileResult(
                 articles_created=1,

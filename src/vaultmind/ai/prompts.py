@@ -286,11 +286,39 @@ def build_reflection_prompt(*, period_label: str, notes_payload: str) -> str:
     return REFLECTION_PROMPT.format(period_label=period_label, notes_payload=notes_payload)
 
 
+# ---- vm ask prompts ----
+
+ASK_SYSTEM_PROMPT = """You are VaultMind's query synthesis engine. You answer questions by synthesizing information from the provided wiki articles and raw sources. You must ground every claim in the input materials. Never invent facts, URLs, or conclusions not supported by the sources."""
+
+ASK_USER_PROMPT = """Answer the question below using only the provided wiki articles and raw sources. If the materials do not contain enough information to fully answer the question, say so clearly and identify what additional knowledge would be needed.
+
+Return ONLY valid JSON in this exact shape:
+{{"answer": "your comprehensive answer in paragraph form", "gaps": ["what's still unknown or would need follow-up research"]}}
+
+Question: {question}
+
+Context:
+{context}
+"""
+
+ASK_SELF_ASSESS_PROMPT = """Given your answer and the question, identify knowledge gaps — areas where the provided sources do not fully address what is being asked. Return only the gaps.
+
+Return JSON:
+{{"gaps": ["gap description 1", "gap description 2"]}}
+
+Question: {question}
+Answer: {answer}
+"""
+
+
 # ---- vm compile prompts ----
 
 COMPILE_CONCEPT_TRIAGE_PROMPT = """You are a librarian organizing a research wiki.
 
 Given the following RAW source documents (these are the original texts, NOT AI summaries), identify the key concepts they introduce or substantially advance.
+
+Existing wiki concepts:
+{existing_concepts}
 
 For each concept:
 - Determine if it is [NEW], [EXISTING: concept-slug], or [MERGE: concept-slug]
@@ -303,6 +331,7 @@ Respond ONLY with valid JSON in this exact shape:
 
 Rules:
 - Slugs must be lowercase, hyphenated (e.g. "attention-mechanisms")
+- Prefer EXISTING when a current concept already covers the source material
 - Do not invent URLs — only use the source URLs provided below
 - If multiple sources cover the same concept, mark them MERGE with the most representative slug
 - Be conservative: only create a new concept if it genuinely warrants its own article

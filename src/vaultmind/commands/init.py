@@ -44,6 +44,36 @@ VAULT_FOLDERS = [
     "⚙️ Meta",
 ]
 
+VAULT_SCHEMA = """# VaultMind Schema
+
+This vault uses VaultMind's Raw -> Wiki architecture.
+
+## Ownership
+
+- `📥 Raw/` is human or Obsidian Web Clipper owned. VaultMind reads it but does not rewrite it.
+- `🗺️ Wiki/` is VaultMind owned. Humans review it.
+- `vault.manifest.json` is VaultMind owned.
+- `VAULTMIND.md` is human owned and may be edited to tune wiki conventions.
+
+## Concept Pages
+
+Concept pages live in `🗺️ Wiki/🧠 Concepts/`.
+
+Use:
+
+- `[[slug|Display Title]]` wikilinks
+- a Sources section with source URLs or raw paths
+- concise, encyclopedic prose
+
+Prefer updating existing concept pages over creating near-duplicates.
+
+## Query Pages
+
+Query answers live in `🗺️ Wiki/📊 Queries/`.
+
+Use preview mode when you want terminal output without writing a page.
+"""
+
 
 def init(verbose: bool = False) -> None:
     """Set up VaultMind — creates config and connects your vault + API key."""
@@ -66,6 +96,7 @@ def init(verbose: bool = False) -> None:
 
     # 3. Create vault folders
     _create_vault_folders(vault_path)
+    _create_vault_schema(vault_path)
 
     # 4. Write config.yaml
     _write_config(vault_path, provider)
@@ -153,6 +184,16 @@ def _create_vault_folders(vault_path: Path) -> None:
         console.print(f"  [green]✓[/green] Created {created} vault folders")
     else:
         console.print("  [dim]Vault folders already exist[/dim]")
+
+
+def _create_vault_schema(vault_path: Path) -> None:
+    """Create the vault-level schema file if it does not exist."""
+    schema_path = vault_path / "VAULTMIND.md"
+    if schema_path.exists():
+        console.print("  [dim]VAULTMIND.md already exists[/dim]")
+        return
+    schema_path.write_text(VAULT_SCHEMA, encoding="utf-8")
+    console.print("  [green]✓[/green] Created VAULTMIND.md")
 
 
 def _write_config(vault_path: Path, provider: str) -> None:
