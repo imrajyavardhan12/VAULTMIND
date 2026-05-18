@@ -165,13 +165,22 @@ async def compile_sources(
             log.info("compile_article_done", slug=target_slug, status="created_new")
             return (slug, target_slug, True, False)
 
+    async def _process_concept_with_error_handling(
+        concept: WikiConceptEntry,
+    ) -> tuple[str, str, bool, bool] | None:
+        """Wrap _process_concept to attach concept name to any exceptions."""
+        try:
+            return await _process_concept(concept)
+        except Exception as exc:
+            result.errors.append(f"Concept '{concept.name}' failed: {exc}")
+            return None
+
     processed = await asyncio.gather(
-        *[_process_concept(c) for c in concepts], return_exceptions=True
+        *[_process_concept_with_error_handling(c) for c in concepts], return_exceptions=False
     )
 
     for item in processed:
-        if isinstance(item, BaseException):
-            result.errors.append(f"Concept processing failed: {item}")
+        if item is None:
             continue
         slug, target_slug, was_created, was_updated = item
         result.articles_created += was_created
