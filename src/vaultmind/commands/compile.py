@@ -112,12 +112,20 @@ def compile(
     if result.articles_created > 0 or result.articles_updated > 0:
         _rebuild_wiki_index(config, manifest, provider)
 
-    print_success(
-        "Compile complete",
-        f"{result.articles_created} created, "
-        f"{result.articles_updated} updated, "
-        f"{result.sources_compiled} sources processed."
-    )
+    # Print success unless we're in full-failure case (no creations, no updates, but errors exist)
+    if not (result.articles_created == 0 and result.articles_updated == 0 and result.errors):
+        print_success(
+            "Compile complete",
+            f"{result.articles_created} created, "
+            f"{result.articles_updated} updated, "
+            f"{result.sources_compiled} sources processed."
+        )
+
+    # Print errors and exit non-zero if any occurred
+    if result.errors:
+        for error in result.errors:
+            print_warning(error)
+        raise typer.Exit(1)
 
 
 async def _run_compile_async(
